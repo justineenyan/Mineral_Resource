@@ -1,0 +1,2652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="artifact-type" content="dashboard">
+  <meta name="design-style" content="carbon">
+  <title>African Natural Resources GIS Interactive Map &amp; Infrastructure Dashboard</title>
+
+  <!-- Typography: IBM Plex Sans & IBM Plex Mono (Carbon Design System) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <style>
+    /* ==========================================================================
+       CARBON DESIGN SYSTEM TOKENS & FOUNDATION
+       ========================================================================== */
+    :root {
+      color-scheme: light;
+
+      /* Page & Surface Layers */
+      --background: #ffffff;
+      --surface-container-low: #f4f4f4;    /* Gray 10 */
+      --surface-container: #f4f4f4;        /* Gray 10 */
+      --surface-container-high: #e0e0e0;   /* Gray 20 */
+      --surface-container-highest: #c6c6c6;/* Gray 30 */
+
+      /* Inks */
+      --on-surface: #161616;               /* Gray 100 */
+      --on-surface-variant: #525252;       /* Gray 70 */
+      --on-surface-muted: #6f6f6f;         /* Gray 60 */
+
+      /* Rules & Borders */
+      --outline: #8d8d8d;                  /* Gray 50 */
+      --outline-variant: #e0e0e0;          /* Gray 20 */
+
+      /* Primary Brand / Interactive */
+      --primary: #0f62fe;                  /* Blue 60 */
+      --on-primary: #ffffff;
+      --primary-container: #d0e2ff;        /* Blue 20 */
+      --on-primary-container: #002d9c;
+      --secondary: #6f6f6f;
+      --tertiary: #198038;                 /* Green 60 */
+      --error: #da1e28;                    /* Red 60 */
+      --on-error: #ffffff;
+      --positive: #198038;
+      --warning: #f1c21b;
+      --focus: #0f62fe;
+
+      /* ==========================================================================
+         HIGH-CONTRAST THEMATIC GIS PALETTE
+         ========================================================================== */
+      /* Energy Resources */
+      --color-crude-oil: #b45309;          /* Deep Amber */
+      --color-natural-gas: #0284c7;        /* Sky Blue */
+      --color-gas-basin: #0369a1;          /* Ocean Blue */
+      --color-coal: #334155;               /* Anthracite Charcoal */
+      --color-refined-fuel: #4f46e5;       /* Indigo */
+
+      /* Critical Battery Minerals */
+      --color-cobalt: #7c3aed;             /* Electric Violet */
+      --color-copper: #c2410c;             /* Burnished Copper */
+      --color-lithium: #0891b2;            /* Vibrant Cyan */
+      --color-nickel: #059669;             /* Emerald Green */
+      --color-graphite: #1e293b;           /* Slate Graphite */
+
+      /* Precious & Strategic Metals */
+      --color-gold: #ca8a04;               /* Golden Yellow */
+      --color-platinum: #a21caf;           /* Imperial Purple */
+      --color-diamond: #0284c7;            /* Diamond Cyan */
+      --color-bauxite: #e11d48;            /* Terracotta Rose */
+      --color-iron-ore: #dc2626;           /* Hematite Crimson */
+      --color-uranium: #65a30d;            /* Radioactive Lime */
+
+      /* Infrastructure */
+      --color-port-energy: #d97706;        /* Amber Port */
+      --color-port-bulk: #2563eb;          /* Royal Blue Bulk Port */
+      --color-port-general: #059669;       /* Green Port */
+      --color-pipe-crude: #b45309;         /* Amber line */
+      --color-pipe-gas: #0284c7;           /* Cyan line */
+      --color-pipe-refined: #6366f1;       /* Violet line */
+
+      /* Regional Boundaries */
+      --reg-north: #e0f2fe;
+      --reg-west: #ecfdf5;
+      --reg-central: #fef3c7;
+      --reg-east: #f3e8ff;
+      --reg-south: #ffedd5;
+
+      /* Map Canvas Colors */
+      --map-ocean: #dbeafe;
+      --map-land: #f8fafc;
+      --map-border: #94a3b8;
+      --map-hover: #bae6fd;
+
+      /* Typography */
+      --font-headline: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-label: 'IBM Plex Mono', monospace;
+
+      /* Scales */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2.5rem;
+      --space-2xl: 4rem;
+
+      --rounded: 0.125rem;
+      --rounded-lg: 0.25rem;
+      --rounded-full: 0.75rem;
+
+      --shadow-1: 0 2px 6px rgba(0, 0, 0, 0.08);
+      --shadow-2: 0 4px 14px rgba(0, 0, 0, 0.12);
+      --rule: 1px solid var(--outline-variant);
+      --field-rule: 1px solid var(--outline);
+      --indicator: 2px solid var(--primary);
+
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --dur-micro: 120ms;
+      --dur-short: 200ms;
+    }
+
+    /* Base Reset */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      overflow-x: clip;
+      margin: 0;
+      padding: 0;
+      background: var(--background);
+      color: var(--on-surface);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header { position: static !important; }
+
+    /* Layout Container */
+    .dashboard-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: var(--space-md) var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    /* Top Brand & Title Block */
+    .app-header {
+      border-bottom: var(--rule);
+      padding-bottom: var(--space-md);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+    }
+    .title-group {
+      max-width: 900px;
+    }
+    .title-tag {
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: var(--space-xs);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .main-title {
+      font-family: var(--font-headline);
+      font-size: clamp(1.5rem, 1.2rem + 1vw, 2.1rem);
+      font-weight: 300;
+      line-height: 1.2;
+      margin: 0 0 var(--space-xs) 0;
+      color: var(--on-surface);
+      letter-spacing: -0.01em;
+    }
+    .main-title strong {
+      font-weight: 600;
+    }
+    .sub-lede {
+      font-size: 0.9375rem;
+      color: var(--on-surface-variant);
+      margin: 0;
+      max-width: 80ch;
+    }
+
+    /* Stat Cards Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1px;
+      background: var(--outline-variant);
+      border: var(--rule);
+      margin-top: var(--space-sm);
+    }
+    .stat-tile {
+      background: var(--surface-container);
+      padding: var(--space-sm) var(--space-md);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: background-color var(--dur-micro) var(--ease-out);
+    }
+    .stat-tile:hover {
+      background: #e8e8e8;
+    }
+    .stat-tile.is-active-tile {
+      border-bottom: var(--indicator);
+      background: #ffffff;
+    }
+    .stat-label {
+      font-family: var(--font-label);
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--on-surface-variant);
+      margin-bottom: var(--space-xs);
+    }
+    .stat-value {
+      font-family: var(--font-label);
+      font-size: 1.625rem;
+      font-weight: 400;
+      color: var(--on-surface);
+      line-height: 1.1;
+    }
+    .stat-sub {
+      font-size: 0.75rem;
+      color: var(--on-surface-muted);
+      margin-top: 2px;
+    }
+
+    /* Controls & Toolbar */
+    .control-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+      background: var(--surface-container);
+      padding: var(--space-sm) var(--space-md);
+      border: var(--rule);
+    }
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .filter-label {
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--on-surface-variant);
+      margin-right: 4px;
+    }
+    .btn-group {
+      display: inline-flex;
+      background: var(--surface-container-high);
+      border: 1px solid var(--outline-variant);
+      padding: 2px;
+    }
+    .btn-chip {
+      font-family: var(--font-headline);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      background: transparent;
+      border: none;
+      padding: 5px 12px;
+      color: var(--on-surface-variant);
+      cursor: pointer;
+      transition: all var(--dur-micro) var(--ease-out);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-chip:hover {
+      color: var(--on-surface);
+      background: rgba(255, 255, 255, 0.6);
+    }
+    .btn-chip.active {
+      background: var(--background);
+      color: var(--primary);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .form-control {
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      padding: 6px 12px;
+      background: var(--background);
+      border: 1px solid var(--outline);
+      color: var(--on-surface);
+      border-radius: var(--rounded);
+      min-width: 180px;
+    }
+    .form-control:focus {
+      outline: 2px solid var(--focus);
+      outline-offset: 1px;
+    }
+
+    .layer-toggle-btn {
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      background: var(--background);
+      border: 1px solid var(--outline);
+      padding: 5px 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--dur-micro);
+    }
+    .layer-toggle-btn.layer-active {
+      background: var(--primary-container);
+      border-color: var(--primary);
+      color: var(--on-primary-container);
+      font-weight: 600;
+    }
+    .layer-indicator-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Main Interactive GIS Workspace */
+    .gis-workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: var(--space-md);
+      align-items: start;
+    }
+    @media (max-width: 1100px) {
+      .gis-workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Map Box */
+    .map-wrapper {
+      position: relative;
+      background: var(--map-ocean);
+      border: var(--rule);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    #map {
+      height: 640px;
+      min-height: 540px;
+      width: 100%;
+      background: var(--map-ocean);
+    }
+    .leaflet-container {
+      background: var(--map-ocean) !important;
+      font-family: var(--font-body);
+    }
+
+    /* Floating Map HUD Elements */
+    .map-hud-top {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(4px);
+      border: 1px solid var(--outline-variant);
+      padding: 6px 12px;
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+      box-shadow: var(--shadow-1);
+      pointer-events: auto;
+    }
+    .map-hud-top strong {
+      color: var(--on-surface);
+    }
+    .map-reset-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 1000;
+      background: var(--background);
+      border: 1px solid var(--outline);
+      padding: 6px 12px;
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--primary);
+      cursor: pointer;
+      box-shadow: var(--shadow-1);
+    }
+    .map-reset-btn:hover {
+      background: var(--primary-container);
+    }
+
+    /* Sidebar / Inspector Panel */
+    .inspector-panel {
+      background: var(--surface-container);
+      border: var(--rule);
+      display: flex;
+      flex-direction: column;
+      height: 640px;
+      overflow: hidden;
+    }
+    .panel-tabs {
+      display: flex;
+      background: var(--surface-container-high);
+      border-bottom: var(--rule);
+    }
+    .panel-tab-btn {
+      flex: 1;
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 10px 8px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--on-surface-variant);
+      cursor: pointer;
+      text-align: center;
+      transition: all var(--dur-micro);
+    }
+    .panel-tab-btn:hover {
+      color: var(--on-surface);
+      background: rgba(255, 255, 255, 0.4);
+    }
+    .panel-tab-btn.active {
+      background: var(--surface-container);
+      color: var(--primary);
+      border-bottom: 2px solid var(--primary);
+      font-weight: 600;
+    }
+    .panel-content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    /* Detail Card in Inspector */
+    .inspector-card {
+      background: var(--background);
+      border: var(--rule);
+      padding: var(--space-md);
+    }
+    .card-title {
+      font-family: var(--font-headline);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0 0 4px 0;
+      color: var(--on-surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .badge {
+      font-family: var(--font-label);
+      font-size: 0.6875rem;
+      padding: 2px 8px;
+      border-radius: var(--rounded-full);
+      font-weight: 500;
+      display: inline-block;
+    }
+    .badge-blue { background: #d0e2ff; color: #0043ce; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-xs) var(--space-sm);
+      margin-top: var(--space-sm);
+      padding-top: var(--space-sm);
+      border-top: var(--rule);
+      font-size: 0.8125rem;
+    }
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .meta-k {
+      font-family: var(--font-label);
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      color: var(--on-surface-variant);
+    }
+    .meta-v {
+      font-weight: 500;
+      color: var(--on-surface);
+    }
+
+    /* Legend System inside Inspector */
+    .legend-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+    .legend-title {
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--on-surface);
+      font-weight: 600;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--outline-variant);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .legend-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78125rem;
+      color: var(--on-surface);
+    }
+    .legend-color-box {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      border-radius: 2px;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    .legend-line-box {
+      width: 22px;
+      height: 4px;
+      flex-shrink: 0;
+      border-radius: 1px;
+    }
+    .legend-line-dashed {
+      border-top: 3px dashed var(--color-natural-gas);
+      height: 0;
+      width: 22px;
+    }
+
+    /* Drilldown Country List */
+    .country-quick-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .country-row-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      background: var(--background);
+      border: 1px solid var(--outline-variant);
+      font-size: 0.8125rem;
+      cursor: pointer;
+      text-align: left;
+      transition: background-color var(--dur-micro);
+    }
+    .country-row-btn:hover {
+      background: var(--primary-container);
+      border-color: var(--primary);
+    }
+    .country-row-btn.selected {
+      background: var(--primary-container);
+      border-left: 3px solid var(--primary);
+      font-weight: 600;
+    }
+
+    /* Data Tables Section */
+    .table-section {
+      background: var(--surface-container);
+      border: var(--rule);
+      padding: var(--space-md);
+      margin-top: var(--space-sm);
+    }
+    .table-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-sm);
+    }
+    .section-title {
+      font-family: var(--font-headline);
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    .table-nav-tabs {
+      display: flex;
+      background: var(--surface-container-high);
+      border: 1px solid var(--outline-variant);
+    }
+    .table-nav-tab {
+      font-family: var(--font-label);
+      font-size: 0.75rem;
+      padding: 6px 14px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--on-surface-variant);
+      transition: all var(--dur-micro);
+    }
+    .table-nav-tab.active {
+      background: var(--background);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .table-scroll-container {
+      overflow-x: auto;
+      max-height: 420px;
+      border: var(--rule);
+      background: var(--background);
+    }
+    .carbon-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.8125rem;
+    }
+    .carbon-table th {
+      background: var(--surface-container-high);
+      font-family: var(--font-label);
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--on-surface);
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--outline);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    .carbon-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--outline-variant);
+      color: var(--on-surface);
+      vertical-align: middle;
+    }
+    .carbon-table tbody tr:nth-child(even) {
+      background: var(--surface-container-low);
+    }
+    .carbon-table tbody tr:hover {
+      background: #e8f0fe !important;
+      cursor: pointer;
+    }
+    .mono-cell {
+      font-family: var(--font-label);
+    }
+    .btn-action-locate {
+      font-family: var(--font-label);
+      font-size: 0.6875rem;
+      background: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 3px 8px;
+      cursor: pointer;
+      border-radius: var(--rounded);
+      transition: all var(--dur-micro);
+    }
+    .btn-action-locate:hover {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    /* Custom Leaflet Tooltips & Popups */
+    .leaflet-popup-content-wrapper {
+      border-radius: 2px;
+      padding: 0;
+      box-shadow: var(--shadow-2);
+      border: 1px solid var(--outline-variant);
+      font-family: var(--font-body);
+    }
+    .leaflet-popup-content {
+      margin: 0;
+      line-height: 1.4;
+    }
+    .popup-box {
+      padding: 12px 14px;
+      font-size: 0.8125rem;
+      min-width: 240px;
+      max-width: 320px;
+    }
+    .popup-title {
+      font-family: var(--font-headline);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      margin: 0 0 6px 0;
+      color: var(--on-surface);
+      border-bottom: 1px solid var(--outline-variant);
+      padding-bottom: 4px;
+    }
+    .popup-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .popup-label {
+      font-family: var(--font-label);
+      font-size: 0.6875rem;
+      color: var(--on-surface-variant);
+      text-transform: uppercase;
+    }
+    .popup-val {
+      font-weight: 500;
+      color: var(--on-surface);
+      text-align: right;
+    }
+
+    /* Footer Note */
+    .dashboard-footer {
+      border-top: var(--rule);
+      padding-top: var(--space-md);
+      margin-top: var(--space-md);
+      font-size: 0.75rem;
+      color: var(--on-surface-muted);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: var(--space-md);
+    }
+    .footer-sources {
+      max-width: 800px;
+    }
+
+    /* Accessibility Focus Ring */
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="header-top">
+        <div class="title-group">
+          <div class="title-tag">
+            <span>●</span> GEOSPATIAL INTELLIGENCE PLATFORM • USGS &amp; GADM CONFLATED
+          </div>
+          <h1 class="main-title">
+            African <strong>Natural Resources GIS</strong> &amp; Infrastructure Dashboard
+          </h1>
+          <p class="sub-lede">
+            Comprehensive spatial analytics covering continuous undiscovered hydrocarbon basins, critical battery minerals, strategic precious metals, trans-continental pipeline corridors, and bulk mineral exporting sea terminals across 56 African political entities.
+          </p>
+        </div>
+      </div>
+
+      <!-- KPI METRIC TILES -->
+      <div class="stats-bar" id="kpiBar">
+        <div class="stat-tile is-active-tile">
+          <span class="stat-label">Political Boundaries</span>
+          <span class="stat-value" id="kpiCountries">56</span>
+          <span class="stat-sub">Sovereign &amp; Admin States</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-label">Mineral Export Ports</span>
+          <span class="stat-value" id="kpiPorts">56</span>
+          <span class="stat-sub">Active Terminals &amp; Quays</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-label">Pipeline Networks</span>
+          <span class="stat-value" id="kpiPipelines">12</span>
+          <span class="stat-sub">14,500+ km Oil &amp; Gas Lines</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-label">Undiscovered Basins</span>
+          <span class="stat-value" id="kpiBasins">7</span>
+          <span class="stat-sub">58+ Billion BOE (USGS)</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-label">Critical Mining Hubs</span>
+          <span class="stat-value" id="kpiMines">14</span>
+          <span class="stat-sub">Copperbelt, Bushveld &amp; Boké</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTROL TOOLBAR -->
+    <section class="control-toolbar" aria-label="Map Filtering and Layer Controls">
+      <div class="toolbar-left">
+        <span class="filter-label">Regional Drill-Down:</span>
+        <div class="btn-group" role="group" aria-label="Filter by African Sub-Region">
+          <button class="btn-chip active" id="btnRegAll" onclick="filterByRegion('ALL')">All Africa</button>
+          <button class="btn-chip" id="btnRegNorth" onclick="filterByRegion('NORTH')">Northern</button>
+          <button class="btn-chip" id="btnRegWest" onclick="filterByRegion('WEST')">Western</button>
+          <button class="btn-chip" id="btnRegCentral" onclick="filterByRegion('CENTRAL')">Central</button>
+          <button class="btn-chip" id="btnRegEast" onclick="filterByRegion('EAST')">Eastern</button>
+          <button class="btn-chip" id="btnRegSouth" onclick="filterByRegion('SOUTH')">Southern</button>
+        </div>
+
+        <select id="countrySelect" class="form-control" onchange="onCountryDropdownChange(this.value)" aria-label="Select Country for Drill-Down">
+          <option value="">Jump to Country Outline…</option>
+        </select>
+      </div>
+
+      <div class="toolbar-right">
+        <span class="filter-label">GIS Layers:</span>
+        <button class="layer-toggle-btn layer-active" id="togPorts" onclick="toggleLayer('ports')" title="Toggle Export Ports">
+          <span class="layer-indicator-dot" style="background: var(--color-port-bulk)"></span> Ports
+        </button>
+        <button class="layer-toggle-btn layer-active" id="togPipes" onclick="toggleLayer('pipes')" title="Toggle Oil & Gas Pipelines">
+          <span class="layer-indicator-dot" style="background: var(--color-crude-oil)"></span> Pipelines
+        </button>
+        <button class="layer-toggle-btn layer-active" id="togBasins" onclick="toggleLayer('basins')" title="Toggle USGS Oil & Gas Basins">
+          <span class="layer-indicator-dot" style="background: var(--color-gas-basin)"></span> O&amp;G Basins
+        </button>
+        <button class="layer-toggle-btn layer-active" id="togMines" onclick="toggleLayer('mines')" title="Toggle Critical Mineral Corridors">
+          <span class="layer-indicator-dot" style="background: var(--color-cobalt)"></span> Critical Mines
+        </button>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE GIS MAP & INSPECTOR WORKSPACE -->
+    <div class="gis-workspace">
+      <!-- MAP VIEWPORT -->
+      <div class="map-wrapper">
+        <div class="map-hud-top" id="mapStatusText">
+          REGION: <strong>ALL AFRICA</strong> • Showing <strong>56 Ports</strong> &amp; <strong>12 Cross-Border Pipelines</strong>
+        </div>
+        <button class="map-reset-btn" onclick="resetMapView()" title="Reset Full Continent View">
+          Reset View ↺
+        </button>
+        <div id="map" role="region" aria-label="Interactive Leaflet Map of African Natural Resources"></div>
+      </div>
+
+      <!-- RIGHT INSPECTION & DRILL-DOWN PANEL -->
+      <aside class="inspector-panel" aria-label="Resource Inspector and Thematic Legends">
+        <nav class="panel-tabs">
+          <button class="panel-tab-btn active" id="tabBtnDrill" onclick="switchInspectorTab('drill')">Country Drill-Down</button>
+          <button class="panel-tab-btn" id="tabBtnLegend" onclick="switchInspectorTab('legend')">Thematic Legends</button>
+          <button class="panel-tab-btn" id="tabBtnStats" onclick="switchInspectorTab('stats')">Regional Summary</button>
+        </nav>
+
+        <div class="panel-content-area" id="panelContentArea">
+          <!-- DRILL-DOWN CONTENT (Default) -->
+          <div id="viewDrill" class="inspector-view">
+            <div class="inspector-card" id="drillCard">
+              <div class="card-title">
+                <span id="drillCountryName">Select an Entity</span>
+                <span class="badge badge-blue" id="drillRegionBadge">Continental Overview</span>
+              </div>
+              <p style="font-size:0.8125rem; color:var(--on-surface-variant); margin: 0 0 var(--space-xs) 0;" id="drillCountryLF">
+                Click any country outline, port marker, or pipeline on the map to inspect its resource endowments, facilities, and boundary metrics.
+              </p>
+
+              <div class="meta-grid" id="drillMetaGrid">
+                <div class="meta-item">
+                  <span class="meta-k">Capital City</span>
+                  <span class="meta-v" id="drillCapital">—</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-k">ISO Alpha-3</span>
+                  <span class="meta-v" id="drillIso">—</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-k">Shape Area</span>
+                  <span class="meta-v" id="drillArea">—</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-k">Shape Length</span>
+                  <span class="meta-v" id="drillPerimeter">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Country Infrastructure Breakdown -->
+            <div class="inspector-card" style="margin-top: var(--space-sm);">
+              <div class="legend-title">
+                <span>Associated Facilities &amp; Corridors</span>
+                <span class="badge badge-amber" id="drillPortCount">0 Ports</span>
+              </div>
+              <div id="drillFacilityList" style="margin-top: 8px; font-size: 0.8125rem; display: flex; flex-direction: column; gap: 6px;">
+                <span style="color: var(--on-surface-muted);">No country currently selected. Pick one from the dropdown or click a polygon on the map.</span>
+              </div>
+            </div>
+
+            <!-- Quick Browse Country List -->
+            <div style="margin-top: var(--space-sm);">
+              <div class="legend-title" style="margin-bottom: 6px;">
+                <span>Active Regional Countries</span>
+                <span id="activeRegionCount" style="font-size:0.6875rem; color:var(--on-surface-variant);">56 Entities</span>
+              </div>
+              <div class="country-quick-list" id="countryQuickList" style="max-height: 220px; overflow-y: auto;">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- THEMATIC LEGEND CONTENT -->
+          <div id="viewLegend" class="inspector-view" style="display: none;">
+            <!-- Category 1: Energy Resources -->
+            <div class="legend-section">
+              <div class="legend-title">
+                <span>1. Energy Resources</span>
+                <span class="badge badge-amber">Hydrocarbons</span>
+              </div>
+              <div class="legend-grid">
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-crude-oil)"></div>
+                  <span>Crude Oil Basins</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-gas-basin)"></div>
+                  <span>Natural Gas Basins</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-coal)"></div>
+                  <span>Coal Deposits</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-port-energy)"></div>
+                  <span>LNG &amp; Oil Terminals</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category 2: Critical Battery Minerals -->
+            <div class="legend-section" style="margin-top: var(--space-md);">
+              <div class="legend-title">
+                <span>2. Critical Battery Minerals</span>
+                <span class="badge badge-purple">Energy Transition</span>
+              </div>
+              <div class="legend-grid">
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-cobalt)"></div>
+                  <span>Cobalt (DRC Belt)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-copper)"></div>
+                  <span>Copper (Cathode/Conc)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-lithium)"></div>
+                  <span>Lithium (Hard Rock)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-nickel)"></div>
+                  <span>Class 1 Nickel</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-graphite)"></div>
+                  <span>Flake Graphite</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category 3: Precious & Strategic Metals -->
+            <div class="legend-section" style="margin-top: var(--space-md);">
+              <div class="legend-title">
+                <span>3. Precious &amp; Strategic Metals</span>
+                <span class="badge badge-red">High Value</span>
+              </div>
+              <div class="legend-grid">
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-gold)"></div>
+                  <span>Gold Concentrate</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-platinum)"></div>
+                  <span>Platinum (PGE)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-diamond)"></div>
+                  <span>Rough Diamonds</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-bauxite)"></div>
+                  <span>Bauxite (Aluminum)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-iron-ore)"></div>
+                  <span>Iron Ore (Hematite)</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-uranium)"></div>
+                  <span>Uranium Oxide</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category 4: Infrastructure Overlays -->
+            <div class="legend-section" style="margin-top: var(--space-md);">
+              <div class="legend-title">
+                <span>4. Infrastructure Overlays</span>
+                <span class="badge badge-blue">Transit &amp; Export</span>
+              </div>
+              <div class="legend-grid">
+                <div class="legend-item">
+                  <div class="legend-line-box" style="background: var(--color-pipe-crude); height: 4px;"></div>
+                  <span>Crude Oil Pipeline</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-line-dashed"></div>
+                  <span>Natural Gas Pipeline</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-line-box" style="background: var(--color-pipe-refined); height: 3px;"></div>
+                  <span>Refined Products Line</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-port-bulk); border-radius: 50%;"></div>
+                  <span>Bulk Commodities Port</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-port-energy); border-radius: 50%;"></div>
+                  <span>Oil &amp; Gas Terminal</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color-box" style="background: var(--color-port-general); border-radius: 50%;"></div>
+                  <span>General Cargo Port</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- REGIONAL SUMMARY TAB -->
+          <div id="viewStats" class="inspector-view" style="display: none;">
+            <div class="inspector-card">
+              <div class="card-title">African Regional Macro Overview</div>
+              <p style="font-size:0.8125rem; color:var(--on-surface-variant);">
+                Distribution of resources and export terminals grouped across the five African Union geographic pillars:
+              </p>
+              
+              <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                <div style="border-left: 3px solid #0284c7; padding-left: 8px;">
+                  <strong style="font-size:0.875rem;">Northern Africa (7 States)</strong>
+                  <div style="font-size:0.75rem; color:var(--on-surface-variant);">
+                    Heavy natural gas and crude export base (Sirte, Grand Erg, SUMED, Transmed, Medgaz) + OCP Phosphates (Morocco).
+                  </div>
+                </div>
+                <div style="border-left: 3px solid #059669; padding-left: 8px;">
+                  <strong style="font-size:0.875rem;">Western Africa (16 States)</strong>
+                  <div style="font-size:0.75rem; color:var(--on-surface-variant);">
+                    Bauxite dominance (Guinea Boké &gt;25B tons), Simandou iron ore, Niger Delta petroleum &amp; WAGP gas corridor.
+                  </div>
+                </div>
+                <div style="border-left: 3px solid #ca8a04; padding-left: 8px;">
+                  <strong style="font-size:0.875rem;">Central Africa (9 States)</strong>
+                  <div style="font-size:0.75rem; color:var(--on-surface-variant);">
+                    Global battery nexus: DRC Cobalt (&gt;70% world supply), Copperbelt, Gabon COMILOG manganese, Chad-Cameroon crude.
+                  </div>
+                </div>
+                <div style="border-left: 3px solid #7c3aed; padding-left: 8px;">
+                  <strong style="font-size:0.875rem;">Eastern Africa (17 States)</strong>
+                  <div style="font-size:0.75rem; color:var(--on-surface-variant);">
+                    Rovuma &amp; Moatize coal/LNG corridors (Mozambique), Madagascar nickel/cobalt (Ambatovy), EACOP crude corridor, titanium.
+                  </div>
+                </div>
+                <div style="border-left: 3px solid #dc2626; padding-left: 8px;">
+                  <strong style="font-size:0.875rem;">Southern Africa (7 States)</strong>
+                  <div style="font-size:0.75rem; color:var(--on-surface-variant);">
+                    Bushveld PGE complex, Richards Bay Coal (72 Mt), Saldanha Bay Iron (60 Mt), Jwaneng diamonds &amp; Zambian copper.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- DATA EXPLORER MULTI-TAB TABLES -->
+    <section class="table-section" aria-label="Tabular Geospatial Infrastructure Explorer">
+      <div class="table-header-row">
+        <div>
+          <h2 class="section-title">Geospatial Assets &amp; Infrastructure Directory</h2>
+          <span style="font-size: 0.75rem; color: var(--on-surface-variant);">Filter, sort, and trigger interactive map centering for individual facilities</span>
+        </div>
+
+        <div style="display: flex; gap: var(--space-sm); align-items: center;">
+          <input type="text" id="tableSearchInput" class="form-control" placeholder="Search facilities, commodities…" oninput="filterTableData(this.value)" aria-label="Search facilities and commodities">
+          <div class="table-nav-tabs">
+            <button class="table-nav-tab active" id="tblTabPorts" onclick="switchTableTab('ports')">Export Ports (56)</button>
+            <button class="table-nav-tab" id="tblTabPipes" onclick="switchTableTab('pipes')">Pipelines (12)</button>
+            <button class="table-nav-tab" id="tblTabBasins" onclick="switchTableTab('basins')">O&amp;G Basins (7)</button>
+            <button class="table-nav-tab" id="tblTabMines" onclick="switchTableTab('mines')">Strategic Mines (14)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-scroll-container">
+        <!-- Ports Table -->
+        <table class="carbon-table" id="portsTable">
+          <thead>
+            <tr>
+              <th>Port Facility</th>
+              <th>Country</th>
+              <th>Facility Type</th>
+              <th>Bulk Commodities Exported</th>
+              <th>Annual Throughput / Capacity</th>
+              <th>Terminal Operator</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="portsTableBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+
+        <!-- Pipelines Table -->
+        <table class="carbon-table" id="pipesTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>Pipeline Network</th>
+              <th>Hydrocarbon Type</th>
+              <th>Traversing Countries</th>
+              <th>Length (km)</th>
+              <th>Throughput / Capacity</th>
+              <th>Terminal Endpoints</th>
+              <th>Lead Operator</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="pipesTableBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+
+        <!-- Basins Table -->
+        <table class="carbon-table" id="basinsTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>Basin Name</th>
+              <th>Country / Region</th>
+              <th>Undiscovered Oil (MMBO)</th>
+              <th>Undiscovered Gas (BCFG)</th>
+              <th>Liquids NGL (MMBNGL)</th>
+              <th>Total Estimated BOE</th>
+              <th>USGS Source Citation</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="basinsTableBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+
+        <!-- Mines Table -->
+        <table class="carbon-table" id="minesTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>Strategic Mining Corridor</th>
+              <th>Host Country</th>
+              <th>Primary Commodities</th>
+              <th>Classification</th>
+              <th>Key Operations &amp; Deposit Details</th>
+              <th>Export Terminal Route</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="minesTableBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FOOTER CITATIONS -->
+    <footer class="dashboard-footer">
+      <div class="footer-sources">
+        <strong>Data Sources &amp; Cartographic Provenance:</strong><br>
+        • U.S. Geological Survey (USGS) World Energy Assessment Series (FS2019-3028 Sirte, FS2020-3003 Grand Erg, FS2019-3016 Reggane, FS2019-3006 Tindouf, FS2016-3003 Taoudeni, FS2017-3003 Kalahari, FS2016-3038/3103 Karoo).<br>
+        • National Geospatial-Intelligence Agency (NGA) World Port Index (Pub 150) &amp; Mineral Commodity Exporting Ports Dataset.<br>
+        • GADM Database of Global Administrative Areas (v3.6) &amp; U.S. Department of State Bureau of Intelligence and Research (INR) Political Boundaries.<br>
+        • African Infrastructure Development Association &amp; Continental Pipeline Network Registries.
+      </div>
+      <div>
+        <span>IBM Carbon Design System Compliant</span> • <span>Pure Vector GIS Rendering</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- API Shim for State Persistence -->
+  <api-shim></api-shim>
+
+  <!-- External Script Dependencies (Pinned CDN) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+
+  <!-- Application Logic -->
+  <script>
+    // =========================================================================
+    // COMPREHENSIVE DATA COLLECTIONS (CONFLATED FROM SOURCE CSVs)
+    // =========================================================================
+
+    // 1. African Master Countries (56 Entities matching Political Boundaries CSV)
+    const AFRICAN_COUNTRIES = [
+      { id: 1, name: "Algeria", lf: "People's Democratic Republic of Algeria", cap: "Algiers", iso2: "DZ", iso3: "DZA", reg: "NORTH", area: 212.63, len: 82.68, lat: 28.03, lng: 1.66 },
+      { id: 2, name: "Angola", lf: "Republic of Angola", cap: "Luanda", iso2: "AO", iso3: "AGO", reg: "CENTRAL", area: 103.82, len: 73.80, lat: -11.20, lng: 17.87 },
+      { id: 3, name: "Benin", lf: "Republic of Benin", cap: "Porto-Novo", iso2: "BJ", iso3: "BEN", reg: "WEST", area: 9.51, len: 20.05, lat: 9.30, lng: 2.31 },
+      { id: 4, name: "Botswana", lf: "Republic of Botswana", cap: "Gaborone", iso2: "BW", iso3: "BWA", reg: "SOUTH", area: 50.64, len: 39.67, lat: -22.32, lng: 24.68 },
+      { id: 5, name: "Burkina Faso", lf: "Burkina Faso", cap: "Ouagadougou", iso2: "BF", iso3: "BFA", reg: "WEST", area: 22.72, len: 31.53, lat: 12.23, lng: -1.56 },
+      { id: 6, name: "Burundi", lf: "Republic of Burundi", cap: "Bujumbura", iso2: "BI", iso3: "BDI", reg: "EAST", area: 2.19, len: 10.38, lat: -3.37, lng: 29.91 },
+      { id: 7, name: "Cabo Verde", lf: "Republic of Cabo Verde", cap: "Praia", iso2: "CV", iso3: "CPV", reg: "WEST", area: 0.35, len: 13.32, lat: 16.53, lng: -23.04 },
+      { id: 8, name: "Cameroon", lf: "Republic of Cameroon", cap: "Yaoundé", iso2: "CM", iso3: "CMR", reg: "CENTRAL", area: 38.08, len: 48.99, lat: 7.36, lng: 12.35 },
+      { id: 9, name: "Central African Republic", lf: "Central African Republic", cap: "Bangui", iso2: "CF", iso3: "CAF", reg: "CENTRAL", area: 50.73, len: 49.57, lat: 6.61, lng: 20.93 },
+      { id: 10, name: "Chad", lf: "Republic of Chad", cap: "N'Djamena", iso2: "TD", iso3: "TCD", reg: "CENTRAL", area: 107.13, len: 55.97, lat: 15.45, lng: 18.73 },
+      { id: 11, name: "Comoros", lf: "Union of the Comoros", cap: "Moroni", iso2: "KM", iso3: "COM", reg: "EAST", area: 0.14, len: 5.39, lat: -11.64, lng: 43.33 },
+      { id: 12, name: "Congo (Brazzaville)", lf: "Republic of the Congo", cap: "Brazzaville", iso2: "CG", iso3: "COG", reg: "CENTRAL", area: 27.79, len: 42.20, lat: -0.22, lng: 15.82 },
+      { id: 13, name: "Congo (Kinshasa)", lf: "Democratic Republic of the Congo", cap: "Kinshasa", iso2: "CD", iso3: "COD", reg: "CENTRAL", area: 189.99, len: 94.25, lat: -4.03, lng: 21.75 },
+      { id: 14, name: "Côte d'Ivoire", lf: "Republic of Côte d'Ivoire", cap: "Yamoussoukro", iso2: "CI", iso3: "CIV", reg: "WEST", area: 26.37, len: 35.10, lat: 7.53, lng: -5.54 },
+      { id: 15, name: "Djibouti", lf: "Republic of Djibouti", cap: "Djibouti", iso2: "DJ", iso3: "DJI", reg: "EAST", area: 1.81, len: 9.47, lat: 11.82, lng: 42.59 },
+      { id: 16, name: "Egypt", lf: "Arab Republic of Egypt", cap: "Cairo", iso2: "EG", iso3: "EGY", reg: "NORTH", area: 89.22, len: 71.02, lat: 26.82, lng: 30.80 },
+      { id: 17, name: "Equatorial Guinea", lf: "Republic of Equatorial Guinea", cap: "Malabo", iso2: "GQ", iso3: "GNQ", reg: "CENTRAL", area: 2.19, len: 10.74, lat: 1.65, lng: 10.26 },
+      { id: 18, name: "Eritrea", lf: "State of Eritrea", cap: "Asmara", iso2: "ER", iso3: "ERI", reg: "EAST", area: 10.14, len: 54.63, lat: 15.17, lng: 39.78 },
+      { id: 19, name: "Eswatini", lf: "Kingdom of Eswatini", cap: "Mbabane", iso2: "SZ", iso3: "SWZ", reg: "SOUTH", area: 1.57, len: 5.18, lat: -26.52, lng: 31.46 },
+      { id: 20, name: "Ethiopia", lf: "Federal Democratic Republic of Ethiopia", cap: "Addis Ababa", iso2: "ET", iso3: "ETH", reg: "EAST", area: 92.89, len: 48.32, lat: 9.14, lng: 40.48 },
+      { id: 21, name: "Gabon", lf: "Gabonese Republic", cap: "Libreville", iso2: "GA", iso3: "GAB", reg: "CENTRAL", area: 21.50, len: 44.52, lat: -0.80, lng: 11.60 },
+      { id: 22, name: "Gambia, The", lf: "Republic of The Gambia", cap: "Banjul", iso2: "GM", iso3: "GMB", reg: "WEST", area: 0.89, len: 11.22, lat: 13.44, lng: -15.31 },
+      { id: 23, name: "Ghana", lf: "Republic of Ghana", cap: "Accra", iso2: "GH", iso3: "GHA", reg: "WEST", area: 19.55, len: 30.61, lat: 7.94, lng: -1.02 },
+      { id: 24, name: "Guinea", lf: "Republic of Guinea", cap: "Conakry", iso2: "GN", iso3: "GIN", reg: "WEST", area: 20.22, len: 53.79, lat: 9.94, lng: -9.69 },
+      { id: 25, name: "Guinea-Bissau", lf: "Republic of Guinea-Bissau", cap: "Bissau", iso2: "GW", iso3: "GNB", reg: "WEST", area: 2.81, len: 50.88, lat: 11.80, lng: -15.18 },
+      { id: 26, name: "Kenya", lf: "Republic of Kenya", cap: "Nairobi", iso2: "KE", iso3: "KEN", reg: "EAST", area: 47.64, len: 48.65, lat: -0.02, lng: 37.90 },
+      { id: 27, name: "Lesotho", lf: "Kingdom of Lesotho", cap: "Maseru", iso2: "LS", iso3: "LSO", reg: "SOUTH", area: 2.84, len: 10.57, lat: -29.60, lng: 28.23 },
+      { id: 28, name: "Liberia", lf: "Republic of Liberia", cap: "Monrovia", iso2: "LR", iso3: "LBR", reg: "WEST", area: 7.84, len: 22.17, lat: 6.42, lng: -9.42 },
+      { id: 29, name: "Libya", lf: "State of Libya", cap: "Tripoli", iso2: "LY", iso3: "LBY", reg: "NORTH", area: 147.20, len: 67.61, lat: 26.33, lng: 17.22 },
+      { id: 30, name: "Madagascar", lf: "Republic of Madagascar", cap: "Antananarivo", iso2: "MG", iso3: "MDG", reg: "EAST", area: 50.94, len: 116.40, lat: -18.76, lng: 46.86 },
+      { id: 31, name: "Malawi", lf: "Republic of Malawi", cap: "Lilongwe", iso2: "MW", iso3: "MWI", reg: "EAST", area: 9.85, len: 27.26, lat: -13.25, lng: 34.30 },
+      { id: 32, name: "Mali", lf: "Republic of Mali", cap: "Bamako", iso2: "ML", iso3: "MLI", reg: "WEST", area: 106.56, len: 69.39, lat: 17.57, lng: -3.99 },
+      { id: 33, name: "Mauritania", lf: "Islamic Republic of Mauritania", cap: "Nouakchott", iso2: "MR", iso3: "MRT", reg: "WEST", area: 90.14, len: 60.72, lat: 21.00, lng: -10.94 },
+      { id: 34, name: "Mauritius", lf: "Republic of Mauritius", cap: "Port Louis", iso2: "MU", iso3: "MUS", reg: "EAST", area: 0.18, len: 6.53, lat: -20.34, lng: 57.55 },
+      { id: 35, name: "Morocco", lf: "Kingdom of Morocco", cap: "Rabat", iso2: "MA", iso3: "MAR", reg: "NORTH", area: 39.42, len: 49.16, lat: 31.79, lng: -7.09 },
+      { id: 36, name: "Mozambique", lf: "Republic of Mozambique", cap: "Maputo", iso2: "MZ", iso3: "MOZ", reg: "EAST", area: 67.06, len: 124.40, lat: -18.66, lng: 35.52 },
+      { id: 37, name: "Namibia", lf: "Republic of Namibia", cap: "Windhoek", iso2: "NA", iso3: "NAM", reg: "SOUTH", area: 72.23, len: 58.54, lat: -22.95, lng: 18.49 },
+      { id: 38, name: "Niger", lf: "Republic of Niger", cap: "Niamey", iso2: "NE", iso3: "NER", reg: "WEST", area: 100.78, len: 52.69, lat: 17.60, lng: 8.08 },
+      { id: 39, name: "Nigeria", lf: "Federal Republic of Nigeria", cap: "Abuja", iso2: "NG", iso3: "NGA", reg: "WEST", area: 74.88, len: 124.20, lat: 9.08, lng: 8.67 },
+      { id: 40, name: "Reunion", lf: "Reunion (French Overseas)", cap: "Saint-Denis", iso2: "RE", iso3: "REU", reg: "EAST", area: 0.22, len: 2.61, lat: -21.11, lng: 55.53 },
+      { id: 41, name: "Rwanda", lf: "Republic of Rwanda", cap: "Kigali", iso2: "RW", iso3: "RWA", reg: "EAST", area: 2.05, len: 9.50, lat: -1.94, lng: 29.87 },
+      { id: 42, name: "São Tomé and Príncipe", lf: "Democratic Republic of São Tomé and Príncipe", cap: "São Tomé", iso2: "ST", iso3: "STP", reg: "CENTRAL", area: 0.08, len: 3.27, lat: 0.18, lng: 6.61 },
+      { id: 43, name: "Senegal", lf: "Republic of Senegal", cap: "Dakar", iso2: "SN", iso3: "SEN", reg: "WEST", area: 16.50, len: 31.46, lat: 14.49, lng: -14.45 },
+      { id: 44, name: "Seychelles", lf: "Republic of Seychelles", cap: "Victoria", iso2: "SC", iso3: "SYC", reg: "EAST", area: 0.04, len: 8.84, lat: -4.67, lng: 55.49 },
+      { id: 45, name: "Sierra Leone", lf: "Republic of Sierra Leone", cap: "Freetown", iso2: "SL", iso3: "SLE", reg: "WEST", area: 5.96, len: 24.81, lat: 8.46, lng: -11.77 },
+      { id: 46, name: "Somalia", lf: "Federal Republic of Somalia", cap: "Mogadishu", iso2: "SO", iso3: "SOM", reg: "EAST", area: 51.85, len: 64.16, lat: 5.15, lng: 46.19 },
+      { id: 47, name: "South Africa", lf: "Republic of South Africa", cap: "Pretoria", iso2: "ZA", iso3: "ZAF", reg: "SOUTH", area: 113.08, len: 99.30, lat: -30.55, lng: 22.93 },
+      { id: 48, name: "South Sudan", lf: "Republic of South Sudan", cap: "Juba", iso2: "SS", iso3: "SSD", reg: "EAST", area: 51.46, len: 46.12, lat: 6.87, lng: 31.30 },
+      { id: 49, name: "Sudan", lf: "Republic of the Sudan", cap: "Khartoum", iso2: "SD", iso3: "SDN", reg: "NORTH", area: 158.38, len: 83.05, lat: 12.86, lng: 30.21 },
+      { id: 50, name: "Tanzania", lf: "United Republic of Tanzania", cap: "Dar es Salaam", iso2: "TZ", iso3: "TZA", reg: "EAST", area: 76.94, len: 71.96, lat: -6.36, lng: 34.88 },
+      { id: 51, name: "Togo", lf: "Togolese Republic", cap: "Lomé", iso2: "TG", iso3: "TGO", reg: "WEST", area: 4.68, len: 15.74, lat: 8.61, lng: 0.82 },
+      { id: 52, name: "Tunisia", lf: "Republic of Tunisia", cap: "Tunis", iso2: "TN", iso3: "TUN", reg: "NORTH", area: 15.14, len: 40.87, lat: 33.88, lng: 9.53 },
+      { id: 53, name: "Uganda", lf: "Republic of Uganda", cap: "Kampala", iso2: "UG", iso3: "UGA", reg: "EAST", area: 19.63, len: 25.18, lat: 1.37, lng: 32.29 },
+      { id: 54, name: "Western Sahara", lf: "Western Sahara", cap: "Laayoune", iso2: "EH", iso3: "ESH", reg: "NORTH", area: 23.86, len: 33.60, lat: 24.21, lng: -12.88 },
+      { id: 55, name: "Zambia", lf: "Republic of Zambia", cap: "Lusaka", iso2: "ZM", iso3: "ZMB", reg: "SOUTH", area: 62.70, len: 53.97, lat: -13.13, lng: 27.84 },
+      { id: 56, name: "Zimbabwe", lf: "Republic of Zimbabwe", cap: "Harare", iso2: "ZW", iso3: "ZWE", reg: "SOUTH", area: 33.53, len: 28.23, lat: -19.01, lng: 29.15 }
+    ];
+
+    // 2. Mineral Exporting Ports (Extracted from Mineral_commodity_exporting_port.csv)
+    const PORTS_DATA = [
+      { id: "DZp01", name: "Algiers", country: "Algeria", type: "Oil and Gas Terminal", lat: 36.76488, lng: 3.06529, cat: "ENERGY", comm: "Hassi Messaoud Crude Oil", cap: "58k bpd", op: "DP World / Entreprise Portuaire d'Alger" },
+      { id: "DZp02", name: "Annaba", country: "Algeria", type: "Bulk Commodities Port", lat: 36.89805, lng: 7.772847, cat: "METALS", comm: "Iron Ore, Steel Products, Phosphate, Potash, Coke", cap: "Major Industrial", op: "Arcelor-Mittal / FERPHOS" },
+      { id: "DZp03", name: "Arzew", country: "Algeria", type: "Oil and Gas Terminal", lat: 35.859705, lng: -0.300684, cat: "ENERGY", comm: "Liquefied Natural Gas (LNG), Crude Oil", cap: "4.7 Mt/yr LNG", op: "Sonatrach / Port d'Arzew" },
+      { id: "DZp04", name: "Bejaia", country: "Algeria", type: "Oil and Gas Terminal", lat: 36.751575, lng: 5.08693, cat: "ENERGY", comm: "Crude Petroleum", cap: "Export Terminal", op: "Entreprise Portuaire de Bejaia" },
+      { id: "DZp05", name: "Mostaganem", country: "Algeria", type: "Bulk Commodities Port", lat: 35.934862, lng: 0.076635, cat: "METALS", comm: "Iron & Steel Bars & Pipes", cap: "87.7k t/yr", op: "Entreprise Portuaire de Mostaganem" },
+      { id: "DZp06", name: "Oran", country: "Algeria", type: "Oil and Gas Terminal", lat: 35.711423, lng: -0.636276, cat: "ENERGY", comm: "Crude Oil, Refined Oil, LPG, NGPL", cap: "Major Refinery Port", op: "Sonatrach / Port d'Oran" },
+      { id: "DZp07", name: "Skikda", country: "Algeria", type: "Oil & Gas Mega-Terminal", lat: 36.887674, lng: 6.90704, cat: "ENERGY", comm: "LNG, Methane, Butane, Refined Hydrocarbons, Metallurgical", cap: "15.7M m³ Refined, 3.05M m³ LNG", op: "Sonatrach / Skikda Port Enterprise" },
+      { id: "AGp01", name: "Cabinda", country: "Angola", type: "Oil and Gas Terminal", lat: -5.550828, lng: 12.193208, cat: "ENERGY", comm: "Crude Oil", cap: "16k bpd", op: "Chevron Angola / Autoridade Portuaria" },
+      { id: "AGp02", name: "Lobito", country: "Angola", type: "Bulk Commodities Port", lat: -12.347971, lng: 13.575202, cat: "BATTERY", comm: "Copper (from DRC/Zambia), Ores, Oil", cap: "Benguela Rail Hub", op: "Empresa Portuaria Do Lobito" },
+      { id: "AGp03", name: "Luanda", country: "Angola", type: "Multi-Commodity Port", lat: -8.8, lng: 13.25, cat: "METALS", comm: "Crude Oil, Fuel Oil, Diamonds, Iron Ore, Cement", cap: "435k t Fuel", op: "Sonangol EP / Port de Luanda" },
+      { id: "AGp04", name: "Malongo Terminal", country: "Angola", type: "Oil and Gas Terminal", lat: -5.396569, lng: 12.197717, cat: "ENERGY", comm: "Cabinda & Nemba Crude, LPG", cap: "Offshore Terminal", op: "Chevron CABGOC" },
+      { id: "AGp05", name: "Namibe", country: "Angola", type: "Bulk Commodities Port", lat: -15.193233, lng: 12.13158, cat: "METALS", comm: "Iron Ore (Kassinga Mine), Granite", cap: "34.3k m³ Granite", op: "SACOMAR / Port do Namibe" },
+      { id: "BEp01", name: "Cotonou", country: "Benin", type: "General & Bulk Port", lat: 6.345091, lng: 2.425525, cat: "METALS", comm: "Uranium (from Niger), Clinker Cement", cap: "1.8 Mt Cement", op: "Bolloré / Ports Authority of Cotonou" },
+      { id: "CPp01", name: "Mindelo (Porto Grande)", country: "Cabo Verde", type: "Bulk Commodities Port", lat: 16.890709, lng: -24.995812, cat: "METALS", comm: "Pozzolana Cement, Gypsum, Kaolin Clay, Salt", cap: "Atlantic Waystation", op: "Enapor Cabo Verde" },
+      { id: "CMp01", name: "Douala", country: "Cameroon", type: "Bulk Commodities Port", lat: 4.04604, lng: 9.684832, cat: "METALS", comm: "Aluminum Metal, Clinker, LPG, Bitumen, Caustic Soda", cap: "Major Gulf Hub", op: "Office National des Ports du Cameroun" },
+      { id: "KMp01", name: "Moroni", country: "Comoros", type: "General Cargo Port", lat: -11.7047, lng: 43.247987, cat: "METALS", comm: "Pozzolana Cement, Building Materials", cap: "Island Quay", op: "APC Autorité Portuelle" },
+      { id: "CGp01", name: "Djeno Terminal", country: "Congo (Brazzaville)", type: "Oil and Gas Terminal", lat: -4.919879, lng: 11.928411, cat: "ENERGY", comm: "Djeno Blend Crude Oil", cap: "200k+ bpd Offshore", op: "Total E&P Congo" },
+      { id: "CGp02", name: "Pointe Noire", country: "Congo (Brazzaville)", type: "Oil and Gas Terminal", lat: -4.783582, lng: 11.831689, cat: "ENERGY", comm: "Refined Petroleum Products", cap: "7.6M bbl/yr", op: "CORAF / Port Authority" },
+      { id: "CDp01", name: "Banana", country: "Congo (Kinshasa)", type: "Oil and Gas Terminal", lat: -6.002458, lng: 12.400477, cat: "ENERGY", comm: "Crude Oil", cap: "Atlantic Terminal", op: "Perenco / SCTP" },
+      { id: "CIp01", name: "Abidjan", country: "Côte d'Ivoire", type: "Multi-Commodity Port", lat: 5.301891, lng: -4.021116, cat: "METALS", comm: "Crude Oil, Refined Oil, Bauxite (Leb Mines)", cap: "1.93 Mt Crude, 750k t Bauxite", op: "Port Autonome d'Abidjan" },
+      { id: "DJp01", name: "Djibouti Port", country: "Djibouti", type: "Strategic Bulk Port", lat: 11.605562, lng: 43.138347, cat: "METALS", comm: "Bulk Cargo, Potash, Ores Transit for Ethiopia", cap: "Major Horn Gate", op: "DPFZA" },
+      { id: "EGp01", name: "Alexandria", country: "Egypt", type: "Bulk & Energy Port", lat: 31.187665, lng: 29.873687, cat: "ENERGY", comm: "Coal, LPG, Butane, Jet Oil, Naphtha", cap: "40k t Coal", op: "Alexandria Port Authority" },
+      { id: "EGp02", name: "Suez", country: "Egypt", type: "Bulk & Energy Port", lat: 29.940412, lng: 32.562914, cat: "ENERGY", comm: "Liquefied Bulk Petroleum, Industrial Cargo", cap: "6.6 Mt Bulk, 4.14 Mt Oil", op: "Maritime Transport Sector" },
+      { id: "EGp03", name: "Bur Safaga", country: "Egypt", type: "Bulk Commodities Port", lat: 26.744517, lng: 33.944056, cat: "METALS", comm: "Ground Phosphate Rock, Fertilizers", cap: "1,000 t/day", op: "Red Sea Ports Authority" },
+      { id: "EGp05", name: "Damietta", country: "Egypt", type: "Oil and Gas Terminal", lat: 31.455324, lng: 31.760809, cat: "ENERGY", comm: "Liquefied Natural Gas (LNG), Liquid Bulk", cap: "8.5 Mt Total", op: "Damietta Port Authority" },
+      { id: "EGp09", name: "North Ain Sukhna", country: "Egypt", type: "Oil and Gas Terminal", lat: 29.653049, lng: 32.356042, cat: "ENERGY", comm: "Crude Oil (SUMED Terminal Intake)", cap: "2.5M bpd Capacity", op: "Arab Petroleum Pipelines CO" },
+      { id: "EGp14", name: "Sidi Kerir", country: "Egypt", type: "Oil and Gas Terminal", lat: 31.05425, lng: 29.67038, cat: "ENERGY", comm: "Crude Oil (SUMED Med Export)", cap: "European Export Hub", op: "SUMED / EGPC" },
+      { id: "GQp01", name: "Punta Europa", country: "Equatorial Guinea", type: "Oil and Gas Terminal", lat: 3.783333, lng: 8.716667, cat: "ENERGY", comm: "Alba Field Condensate, LNG, Methanol", cap: "3.7 Mt LNG, 24M bbl", op: "Marathon Oil / EG LNG" },
+      { id: "ERp01", name: "Mitsiwa (Massawa)", country: "Eritrea", type: "General & Bulk Port", lat: 15.613005, lng: 39.479837, cat: "METALS", comm: "Copper, Gold, Zinc, Silver (Bisha Mine)", cap: "Mineral Export Hub", op: "Massawa Port Administration" },
+      { id: "GAp01", name: "Cap Lopez", country: "Gabon", type: "Oil and Gas Terminal", lat: -0.63079, lng: 8.714313, cat: "ENERGY", comm: "Mandji Crude Oil Blend", cap: "Major Oil Terminal", op: "Total Gabon" },
+      { id: "GAp03", name: "Port Owendo", country: "Gabon", type: "Bulk Commodities Port", lat: 0.284288, lng: 9.503487, cat: "METALS", comm: "Manganese Ore (Moanda Mine)", cap: "4.5+ Mt Manganese", op: "COMILOG / Office des Ports" },
+      { id: "GHp01", name: "Takoradi", country: "Ghana", type: "Bulk & Energy Port", lat: 4.886308, lng: -1.736887, cat: "ENERGY", comm: "Jubilee Crude Oil, Bauxite, Manganese Ore", cap: "Offshore Hub", op: "Ghana Ports & Harbours Authority" },
+      { id: "GHp02", name: "Tema", country: "Ghana", type: "Oil & Smelter Port", lat: 5.626993, lng: 0.005886, cat: "METALS", comm: "Crude Oil, Natural Gas, Aluminum (VALCO)", cap: "45k bpd Crude", op: "Ghana Ports & Harbours Authority" },
+      { id: "GNp01", name: "Conakry", country: "Guinea", type: "Multi-Commodity Port", lat: 9.516667, lng: -13.716667, cat: "METALS", comm: "Bauxite, Iron Ore, Gold, Diamonds, Clinker", cap: "300k t Cement", op: "Port Authority of Conakry" },
+      { id: "GNp02", name: "Kamsar", country: "Guinea", type: "Mega-Bauxite Port", lat: 10.644509, lng: -14.613841, cat: "METALS", comm: "High-Grade Bauxite (Boké Mining Basin)", cap: "30+ Mt Bauxite/yr", op: "Abu Dhabi Ports / OFAB" },
+      { id: "GWp01", name: "Buba", country: "Guinea-Bissau", type: "Bulk Commodities Port", lat: 11.586798, lng: -14.998924, cat: "METALS", comm: "Bauxite (Boe Region Deposits)", cap: "Deepwater Project", op: "Bauxite Angola" },
+      { id: "KEp01", name: "Lamu", country: "Kenya", type: "Deepwater Energy Port", lat: -2.266667, lng: 40.9, cat: "ENERGY", comm: "Crude Oil (LAPSSET Corridor)", cap: "New Deepwater Terminal", op: "Kenya Ports Authority" },
+      { id: "KEp02", name: "Mombasa", country: "Kenya", type: "Bulk Commodities Port", lat: -4.04269, lng: 39.62995, cat: "METALS", comm: "Rutile, Ilmenite, Zircon (Kwale), Soda Ash, Fluorspar", cap: "Primary East Gate", op: "Kenya Ports Authority / Base Titanium" },
+      { id: "LRp01", name: "Buchanan", country: "Liberia", type: "Iron Ore Port", lat: 5.858548, lng: -10.050165, cat: "METALS", comm: "Iron Ore (Mount Tokadeh, Yekepa)", cap: "Dedicated Rail Link", op: "ArcelorMittal / NPA Liberia" },
+      { id: "LRp02", name: "Monrovia (Freeport)", country: "Liberia", type: "Bulk Commodities Port", lat: 6.341297, lng: -10.796019, cat: "METALS", comm: "Iron Ore (Western Cluster: Bomi Hills, Bea)", cap: "Major Deepwater", op: "National Port Authority" },
+      { id: "LYp01", name: "Marsa el Brega", country: "Libya", type: "Oil and Gas Terminal", lat: 30.416667, lng: 19.6, cat: "ENERGY", comm: "Crude, LNG, Petrochemicals (Methanol, Ammonia)", cap: "Sirte Basin Export", op: "Sirte Oil Co / Libyan Ports Co" },
+      { id: "LYp02", name: "As Sidra", country: "Libya", type: "Oil and Gas Terminal", lat: 30.63543, lng: 18.366434, cat: "ENERGY", comm: "Waha Blend Crude Oil", cap: "80k+ bpd", op: "Waha Oil Company" },
+      { id: "LYp07", name: "Ras Lanuf", country: "Libya", type: "Oil and Gas Terminal", lat: 30.489162, lng: 18.583522, cat: "ENERGY", comm: "Crude Oil, Refined Oil (Harouge Operations)", cap: "Refinery & Terminal", op: "Harouge Oil Operations" },
+      { id: "MGp02", name: "Port D'Ehoala", country: "Madagascar", type: "Mineral Sands Port", lat: -25.066622, lng: 46.96481, cat: "METALS", comm: "Titanium Ilmenite (QMM Mandena)", cap: "Deepwater Facility", op: "Rio Tinto / QIT Madagascar" },
+      { id: "MGp03", name: "Toamasina (Tamatave)", country: "Madagascar", type: "Strategic Battery Metal Port", lat: -18.157553, lng: 49.427314, cat: "BATTERY", comm: "Refined Nickel & Cobalt (Ambatovy), Chrome, Quartz", cap: "60k t Nickel, 5.6k t Cobalt", op: "Ambatovy / SPAT" },
+      { id: "MGp04", name: "Tôlanaro", country: "Madagascar", type: "General & Flake Port", lat: -25.027801, lng: 46.996049, cat: "BATTERY", comm: "High-Quality Flake Graphite (Molo Mine)", cap: "Battery Anode Grade", op: "NextSource Materials" },
+      { id: "MRp01", name: "Nouadhibou", country: "Mauritania", type: "Iron Ore Mega-Terminal", lat: 20.898902, lng: -17.052944, cat: "METALS", comm: "Iron Ore Pellets 70% Fe (Zouérat / Fdérik)", cap: "12 Million t/yr", op: "SNIM / Nouadhibou Port Authority" },
+      { id: "MRp02", name: "Nouakchott", country: "Mauritania", type: "Multi-Commodity Port", lat: 18.035633, lng: -16.02391, cat: "METALS", comm: "Copper Concentrate, Gold, Gypsum, LNG, Fuel", cap: "270k t Copper", op: "PANPA / Mauritanian Copper Mines" },
+      { id: "MUp01", name: "Port Louis", country: "Mauritius", type: "Bulk & Energy Port", lat: -20.143158, lng: 57.490517, cat: "ENERGY", comm: "Refined Petroleum, Clinker Cement, Coal", cap: "1.5 Mt Liquid Bulk", op: "Mauritius Ports Authority" },
+      { id: "MAp02", name: "Casablanca", country: "Morocco", type: "Phosphate & Steel Port", lat: 33.607233, lng: -7.600243, cat: "METALS", comm: "Phosphate Rock, Metallurgical Products, Coal", cap: "National Commercial Gate", op: "OCP / Marsa Maroc" },
+      { id: "MAp03", name: "El Jorf Lasfar", country: "Morocco", type: "World Phosphate Mega-Hub", lat: 33.12593, lng: -8.624282, cat: "METALS", comm: "Crude Phosphate, Phosphoric Acid, Fertilizers", cap: "Largest Phosphate Hub globally", op: "OCP / SODEP" },
+      { id: "MAp08", name: "Tangier-Med", country: "Morocco", type: "Transshipment & Oil Terminal", lat: 35.86178, lng: -5.537478, cat: "ENERGY", comm: "Refined Bunker Fuel, Diesel, Containerized Minerals", cap: "630k t Fuel", op: "Tanger Med Port Authority" },
+      { id: "MZp01", name: "Beira", country: "Mozambique", type: "Bulk Commodities Port", lat: -19.818507, lng: 34.835331, cat: "METALS", comm: "Moatize Coal, Ferrochrome, Copper Cathodes, Granite", cap: "6 Mt Coal, 3 Mt Fuel", op: "Cornelder de Moçambique" },
+      { id: "MZp02", name: "Maputo", country: "Mozambique", type: "Bulk Metals Mega-Port", lat: -25.961353, lng: 32.550781, cat: "METALS", comm: "Mozal Aluminum, Ferrochrome, Magnetite, Coal", cap: "4.5 Mt Ferroalloys, 560k t Al", op: "MPDC / Grindrod" },
+      { id: "MZp03", name: "Nacala", country: "Mozambique", type: "Coal & Graphite Terminal", lat: -14.543914, lng: 40.667676, cat: "ENERGY", comm: "Hard Coking & Thermal Coal, Flake Graphite", cap: "18 Mt Coal/yr", op: "Vale Moçambique / CDN" },
+      { id: "NAp01", name: "Luderitz Bay", country: "Namibia", type: "General & Bulk Port", lat: -26.641568, lng: 15.153546, cat: "METALS", comm: "Diamonds, Manganese (Tshipi Borwa Mine)", cap: "Southern Hub", op: "Namport" },
+      { id: "NAp02", name: "Walvis Bay", country: "Namibia", type: "Critical Mineral Gateway", lat: -22.952062, lng: 14.495745, cat: "BATTERY", comm: "Copper Concentrate (DRC/Zambia), Tantalum", cap: "Trans-Kalahari Corridor", op: "Namport" },
+      { id: "NGp03", name: "Escravos Terminal", country: "Nigeria", type: "Oil and Gas Terminal", lat: 5.607665, lng: 5.195441, cat: "ENERGY", comm: "Escravos Blend Crude, LNG, GTL", cap: "2.6M bbl Storage", op: "Chevron Nigeria Ltd." },
+      { id: "NGp04", name: "Forcados Terminal", country: "Nigeria", type: "Oil and Gas Terminal", lat: 5.349901, lng: 5.352151, cat: "ENERGY", comm: "Forcados Blend Crude Oil", cap: "240k bpd Export", op: "Shell SPDC / NPA" },
+      { id: "NGp08", name: "Onne", country: "Nigeria", type: "Oil & Bulk Free Zone", lat: 4.68411, lng: 7.156304, cat: "ENERGY", comm: "Crude, Refined, Urea Fertilizer, Iron Rods", cap: "Oil & Gas Free Zone", op: "Intel Nig Ltd / NPA" },
+      { id: "NGp09", name: "Port Harcourt", country: "Nigeria", type: "Bulk & Energy Port", lat: 4.758376, lng: 7.005019, cat: "METALS", comm: "Crude, Refined, Coal (Enugu), Tin & Columbite (Jos)", cap: "Eastern Delta Hub", op: "PTOL / BUA Terminals" },
+      { id: "SNp01", name: "Dakar", country: "Senegal", type: "Bulk Mineral & Phosphate Port", lat: 14.687497, lng: -17.426862, cat: "METALS", comm: "Ilmenite & Zircon (GCO), Phosphoric Acid, Clinker", cap: "600k t Ilmenite, 392k t Acid", op: "Port Autonome de Dakar / GCO" },
+      { id: "SLp01", name: "Bonthe", country: "Sierra Leone", type: "Rutile Export Port", lat: 7.530283, lng: -12.501203, cat: "METALS", comm: "Rutile, Ilmenite Concentrate, Zircon", cap: "High-grade Titanium", op: "Sierra Rutile / SLPA" },
+      { id: "SLp03", name: "Pepel", country: "Sierra Leone", type: "Iron Ore Terminal", lat: 8.57749, lng: -13.058109, cat: "METALS", comm: "High-Grade Iron Ore &gt;65% Fe (Tonkolili, Marampa)", cap: "20 Mt Capacity", op: "African Minerals (AML) / SL Mining" },
+      { id: "ZAp02", name: "Durban", country: "South Africa", type: "Multi-Commodity Mega-Port", lat: -29.891513, lng: 31.024477, cat: "METALS", comm: "Chrome Ore, Ferrochrome, Manganese, Petroleum, Copper", cap: "Largest Container/Bulk Gate", op: "Transnet National Port Authority" },
+      { id: "ZAp05", name: "Ngqura (Coega)", country: "South Africa", type: "Deepwater Manganese Terminal", lat: -33.804043, lng: 25.682427, cat: "METALS", comm: "Manganese Ore (Northern Cape Mines)", cap: "16 Mt/yr Manganese", op: "Transnet Port Terminals" },
+      { id: "ZAp07", name: "Richards Bay (RBCT)", country: "South Africa", type: "Coal Mega-Terminal", lat: -28.788891, lng: 32.03952, cat: "ENERGY", comm: "Thermal & Coking Coal", cap: "72 Million t/yr (World's Largest)", op: "RBCT / Transnet" },
+      { id: "ZAp08", name: "Saldanha Bay", country: "South Africa", type: "Iron Ore Mega-Terminal", lat: -33.004957, lng: 17.99836, cat: "METALS", comm: "Sishen Iron Ore (Hematite), Copper & Lead Concentrate", cap: "60 Million t/yr Iron Ore", op: "Transnet National Port Authority" },
+      { id: "SDp01", name: "Port Sudan", country: "Sudan", type: "Oil & Bulk Terminal", lat: 19.6, lng: 37.233333, cat: "ENERGY", comm: "Nile Blend Crude, Dar Blend Crude, Cement", cap: "Red Sea Export Gate", op: "Sudan Sea Ports Corporation" },
+      { id: "TZp01", name: "Dar es Salaam", country: "Tanzania", type: "Copper Corridor Port", lat: -6.829856, lng: 39.28864, cat: "BATTERY", comm: "Copper Concentrate & Cathodes (Lumwana/Zambia), Oil", cap: "6 Mt Liquid Bulk", op: "Tanzania Port Authority / TICTS" },
+      { id: "TGp01", name: "Kpeme", country: "Togo", type: "Bulk Phosphate Port", lat: 6.199715, lng: 1.517154, cat: "METALS", comm: "Phosphoric Acid, Phosphate Rock (Hahoetoé)", cap: "Dedicated Jetty", op: "Port Autonome de Kpeme" },
+      { id: "TGp02", name: "Lomé", country: "Togo", type: "Deepwater Transshipment Hub", lat: 6.139928, lng: 1.282861, cat: "ENERGY", comm: "Refined Petroleum, Clinker, Gypsum", cap: "Sahel Transit Hub", op: "Port Autonome de Lome" },
+      { id: "TNp02", name: "Gabes", country: "Tunisia", type: "Chemical & Fertilizer Port", lat: 33.895473, lng: 10.116028, cat: "METALS", comm: "Phosphoric Acid, DAP, TSP, MAP, Aluminum Fluoride", cap: "Major Chemical Complex", op: "GCT / Office des Ports" },
+      { id: "TNp06", name: "Skhira", country: "Tunisia", type: "Oil and Gas Terminal", lat: 34.287482, lng: 10.096441, cat: "ENERGY", comm: "Refined Petroleum, Crude Oil", cap: "Gulf of Gabes Terminal", op: "OMMP Tunisia" },
+      { id: "EHp02", name: "Laayoune (El Aaiun)", country: "Western Sahara", type: "Phosphate Export Pier", lat: 27.093152, lng: -13.431582, cat: "METALS", comm: "Phosboucraa High-Grade Phosphate Rock", cap: "2.6 Million t/yr", op: "Phosboucraa / OCP Group" }
+    ];
+
+    // 3. Specific Pipeline Networks (Infra_OG_Pipelines)
+    const PIPELINES_DATA = [
+      {
+        id: "PIPE_01",
+        name: "SUMED (Suez-Mediterranean Pipeline)",
+        type: "Crude Oil",
+        color: "var(--color-pipe-crude)",
+        dash: false,
+        countries: ["Egypt"],
+        length: 320,
+        cap: "2.5 Million bpd",
+        endpoints: "Ain Sukhna (Red Sea) → Sidi Kerir (Mediterranean)",
+        op: "Arab Petroleum Pipelines Co. (SUMED)",
+        coords: [
+          [29.653, 32.356],
+          [29.800, 31.850],
+          [30.100, 31.100],
+          [30.600, 30.300],
+          [31.054, 29.670]
+        ]
+      },
+      {
+        id: "PIPE_02",
+        name: "West African Gas Pipeline (WAGP)",
+        type: "Natural Gas",
+        color: "var(--color-pipe-gas)",
+        dash: true,
+        countries: ["Nigeria", "Benin", "Togo", "Ghana"],
+        length: 678,
+        cap: "474 MMcf/d",
+        endpoints: "Escravos / Lagos (Nigeria) → Cotonou → Lomé → Tema / Takoradi (Ghana)",
+        op: "West African Gas Pipeline Company (WAPCo)",
+        coords: [
+          [5.607, 5.195],
+          [6.411, 3.392],
+          [6.345, 2.425],
+          [6.139, 1.282],
+          [5.626, 0.005],
+          [4.886, -1.736]
+        ]
+      },
+      {
+        id: "PIPE_03",
+        name: "Chad-Cameroon Petroleum Pipeline",
+        type: "Crude Oil",
+        color: "var(--color-pipe-crude)",
+        dash: false,
+        countries: ["Chad", "Cameroon"],
+        length: 1070,
+        cap: "225,000 bpd",
+        endpoints: "Doba Basin (Komé, Chad) → Yaoundé → Kribi Marine Terminal (Cameroon)",
+        op: "COTCO / TOTCO",
+        coords: [
+          [8.650, 16.850],
+          [7.780, 15.350],
+          [7.320, 13.580],
+          [5.500, 12.500],
+          [3.870, 11.520],
+          [2.940, 9.910]
+        ]
+      },
+      {
+        id: "PIPE_04",
+        name: "Trans-Mediterranean Gas Pipeline (Enrico Mattei)",
+        type: "Natural Gas",
+        color: "var(--color-pipe-gas)",
+        dash: true,
+        countries: ["Algeria", "Tunisia"],
+        length: 2475,
+        cap: "33.5 Billion m³/yr",
+        endpoints: "Hassi R'Mel (Algeria) → Cap Bon (Tunisia) → Sicily (Italy)",
+        op: "Sonatrach / Eni",
+        coords: [
+          [32.930, 3.270],
+          [34.500, 5.800],
+          [35.400, 8.500],
+          [36.800, 10.200],
+          [37.050, 11.050],
+          [37.600, 12.000]
+        ]
+      },
+      {
+        id: "PIPE_05",
+        name: "Medgaz Deepwater Gas Pipeline",
+        type: "Natural Gas",
+        color: "var(--color-pipe-gas)",
+        dash: true,
+        countries: ["Algeria"],
+        length: 757,
+        cap: "10.5 Billion m³/yr",
+        endpoints: "Hassi R'Mel → Beni Saf (Algeria) → Almería (Spain)",
+        op: "Sonatrach / Naturgy",
+        coords: [
+          [32.930, 3.270],
+          [34.800, 1.200],
+          [35.300, -1.380],
+          [36.500, -2.100],
+          [36.830, -2.460]
+        ]
+      },
+      {
+        id: "PIPE_06",
+        name: "Maghreb-Europe Gas Pipeline (GME)",
+        type: "Natural Gas",
+        color: "var(--color-pipe-gas)",
+        dash: true,
+        countries: ["Algeria", "Morocco"],
+        length: 1620,
+        cap: "12 Billion m³/yr",
+        endpoints: "Hassi R'Mel (Algeria) → Taza → Tangier (Morocco) → Córdoba",
+        op: "Sonatrach / Metragaz",
+        coords: [
+          [32.930, 3.270],
+          [34.300, -0.500],
+          [34.010, -2.030],
+          [34.200, -4.000],
+          [35.780, -5.810],
+          [36.000, -5.600]
+        ]
+      },
+      {
+        id: "PIPE_07",
+        name: "Tazama Petroleum Pipeline",
+        type: "Crude & Refined Oil",
+        color: "var(--color-pipe-crude)",
+        dash: false,
+        countries: ["Tanzania", "Zambia"],
+        length: 1710,
+        cap: "1.1 Million t/yr",
+        endpoints: "Dar es Salaam Port (Tanzania) → Iringa → Mbeya → Ndola Refinery (Zambia)",
+        op: "TAZAMA Pipelines Ltd",
+        coords: [
+          [-6.829, 39.288],
+          [-6.820, 37.660],
+          [-7.770, 35.690],
+          [-8.900, 33.460],
+          [-10.200, 31.800],
+          [-12.970, 28.650]
+        ]
+      },
+      {
+        id: "PIPE_08",
+        name: "East African Crude Oil Pipeline (EACOP)",
+        type: "Heated Crude Oil",
+        color: "var(--color-pipe-crude)",
+        dash: false,
+        countries: ["Uganda", "Tanzania"],
+        length: 1443,
+        cap: "216,000 bpd",
+        endpoints: "Lake Albert / Hoima (Uganda) → Singida → Tanga Port (Tanzania)",
+        op: "TotalEnergies / CNOOC / UNOC / TPDC",
+        coords: [
+          [1.430, 31.350],
+          [-0.340, 31.740],
+          [-1.330, 31.810],
+          [-3.000, 33.000],
+          [-4.720, 34.740],
+          [-5.070, 39.100]
+        ]
+      },
+      {
+        id: "PIPE_09",
+        name: "Petrodar & GNPOC Sudan Pipelines",
+        type: "Crude Oil",
+        color: "var(--color-pipe-crude)",
+        dash: false,
+        countries: ["South Sudan", "Sudan"],
+        length: 1500,
+        cap: "450,000 bpd",
+        endpoints: "Melut & Heglig Basins (South Sudan) → Khartoum → Bashayer Terminal / Port Sudan",
+        op: "Petrodar / GNPOC",
+        coords: [
+          [10.450, 32.550],
+          [12.000, 32.600],
+          [13.160, 32.660],
+          [15.600, 32.530],
+          [17.500, 34.000],
+          [19.600, 37.233]
+        ]
+      },
+      {
+        id: "PIPE_10",
+        name: "ROMPCO Gas Pipeline",
+        type: "Natural Gas",
+        color: "var(--color-pipe-gas)",
+        dash: true,
+        countries: ["Mozambique", "South Africa"],
+        length: 865,
+        cap: "212 MGJ/yr",
+        endpoints: "Temane & Pande Fields (Mozambique) → Ressano Garcia → Secunda (South Africa)",
+        op: "ROMPCO (Sasol / CMH / iGas)",
+        coords: [
+          [-21.620, 35.010],
+          [-23.800, 33.500],
+          [-25.440, 31.990],
+          [-25.900, 30.500],
+          [-26.550, 29.170]
+        ]
+      },
+      {
+        id: "PIPE_11",
+        name: "Transnet NMPP Multi-Product Pipeline",
+        type: "Refined Petroleum",
+        color: "var(--color-pipe-refined)",
+        dash: false,
+        countries: ["South Africa"],
+        length: 715,
+        cap: "8.4 Billion L/yr",
+        endpoints: "Durban Terminal → Pietermaritzburg → Ladysmith → Johannesburg Hub",
+        op: "Transnet Pipelines",
+        coords: [
+          [-29.891, 31.024],
+          [-29.600, 30.380],
+          [-28.560, 29.780],
+          [-27.200, 29.200],
+          [-26.310, 28.140]
+        ]
+      },
+      {
+        id: "PIPE_12",
+        name: "Trans-Forcados & Nembe Trunklines",
+        type: "Crude Oil",
+        color: "var(--color-pipe-crude)",
+        dash: false,
+        countries: ["Nigeria"],
+        length: 180,
+        cap: "300,000 bpd",
+        endpoints: "Niger Delta Hubs (Ughelli) → Forcados & Bonny Marine Terminals",
+        op: "Shell SPDC / Aiteo",
+        coords: [
+          [5.500, 6.250],
+          [5.450, 5.800],
+          [5.350, 5.352],
+          [4.750, 6.500],
+          [4.430, 7.160]
+        ]
+      }
+    ];
+
+    // 4. Undiscovered Oil and Gas Basins (From Africa Undiscovered features CSV)
+    const BASINS_DATA = [
+      {
+        id: "BASIN_01",
+        name: "Sirte Basin",
+        uid: 2043,
+        country: "Libya",
+        oil: "23,700",
+        gas: "23,000",
+        ngl: "332",
+        totalBoe: "27,900 MMBOE",
+        shapeArea: 54.91,
+        lat: 28.5,
+        lng: 18.5,
+        bounds: [[25.5, 14.8], [31.5, 22.0]],
+        citation: "USGS publication FS2019-3028"
+      },
+      {
+        id: "BASIN_02",
+        name: "Grand Erg/Ahnet Basin",
+        uid: 2058,
+        country: "Algeria",
+        oil: "0",
+        gas: "30,500",
+        ngl: "103",
+        totalBoe: "5,180 MMBOE",
+        shapeArea: 52.78,
+        lat: 29.0,
+        lng: 2.5,
+        bounds: [[26.5, -0.5], [31.5, 5.5]],
+        citation: "USGS publication FS2020-3003"
+      },
+      {
+        id: "BASIN_03",
+        name: "Reggane Basin",
+        uid: 2060,
+        country: "Algeria",
+        oil: "1,210",
+        gas: "60,100",
+        ngl: "240",
+        totalBoe: "11,600 MMBOE",
+        shapeArea: 10.45,
+        lat: 26.7,
+        lng: 0.2,
+        bounds: [[25.0, -1.5], [28.4, 2.0]],
+        citation: "USGS publication FS2019-3016"
+      },
+      {
+        id: "BASIN_04",
+        name: "Tindouf Basin",
+        uid: 2067,
+        country: "Algeria / Morocco / Mauritania",
+        oil: "2,450",
+        gas: "113,000",
+        ngl: "454",
+        totalBoe: "22,100 MMBOE",
+        shapeArea: 15.40,
+        lat: 27.5,
+        lng: -6.5,
+        bounds: [[26.0, -8.5], [29.0, -4.5]],
+        citation: "USGS publication FS2019-3006"
+      },
+      {
+        id: "BASIN_05",
+        name: "Taoudeni Basin",
+        uid: 7035,
+        country: "Mali / Mauritania",
+        oil: "602",
+        gas: "6,030",
+        ngl: "218",
+        totalBoe: "1,890 MMBOE",
+        shapeArea: 163.47,
+        lat: 22.5,
+        lng: -4.0,
+        bounds: [[19.0, -9.0], [25.5, 1.0]],
+        citation: "USGS publication FS2016-3003"
+      },
+      {
+        id: "BASIN_06",
+        name: "Kalahari Basin",
+        uid: 7325,
+        country: "Botswana / Namibia / South Africa",
+        oil: "0",
+        gas: "4,500",
+        ngl: "0",
+        totalBoe: "751 MMBOE",
+        shapeArea: 56.98,
+        lat: -24.0,
+        lng: 22.0,
+        bounds: [[-27.0, 19.5], [-21.0, 25.0]],
+        citation: "USGS publication FS2017-3003"
+      },
+      {
+        id: "BASIN_07",
+        name: "Karoo Basin",
+        uid: 7355,
+        country: "South Africa",
+        oil: "0",
+        gas: "49,800",
+        ngl: "445",
+        totalBoe: "8,740 MMBOE",
+        shapeArea: 56.99,
+        lat: -31.5,
+        lng: 24.5,
+        bounds: [[-33.5, 21.0], [-29.5, 28.0]],
+        citation: "USGS publication FS2016-3038/3103"
+      }
+    ];
+
+    // 5. Critical & Strategic Mining Hubs (Thematic additions for full African coverage)
+    const MINES_DATA = [
+      { id: "MINE_01", name: "Central African Copperbelt (Kolwezi & Mutanda)", country: "Congo (Kinshasa)", comm: "Cobalt, Copper", cat: "BATTERY", details: "World's largest cobalt reserve (>70% global supply). Massive high-grade copper cathode production.", route: "Lobito Corridor & Durban Hub", lat: -10.72, lng: 25.47 },
+      { id: "MINE_02", name: "Zambian Copperbelt (Lumwana & Kansanshi)", country: "Zambia", comm: "Copper, Cobalt", cat: "BATTERY", details: "Tier-1 open-pit and underground copper complexes producing blister and refined cathode.", route: "Tazama corridor to Dar es Salaam", lat: -12.18, lng: 26.40 },
+      { id: "MINE_03", name: "Boké & Sangarédi Bauxite Belt", country: "Guinea", comm: "Bauxite (Aluminum)", cat: "METALS", details: "World's premier high-grade bauxite deposit (>25 Billion tons). Supplies global smelters.", route: "Dedicated heavy haul rail to Port of Kamsar", lat: 11.05, lng: -14.30 },
+      { id: "MINE_04", name: "Bushveld Igneous Complex", country: "South Africa", comm: "Platinum Group (PGE), Chrome, Vanadium", cat: "METALS", details: "Holds ~75% of global platinum and chromium reserves (Merensky Reef & UG2).", route: "Transnet rail to Durban & Maputo", lat: -25.65, lng: 27.24 },
+      { id: "MINE_05", name: "Simandou Iron Ore Range", country: "Guinea", comm: "Iron Ore (Hematite >65% Fe)", cat: "METALS", details: "World's largest undeveloped high-grade hematite iron deposit (>4 Billion tons).", route: "650 km Trans-Guinean railway to Matakong Port", lat: 8.53, lng: -8.92 },
+      { id: "MINE_06", name: "Witwatersrand Basin", country: "South Africa", comm: "Gold, Uranium", cat: "METALS", details: "World's most prolific historic gold province, deep gold reef operations.", route: "Domestic refining to Rand Refinery", lat: -26.20, lng: 28.04 },
+      { id: "MINE_07", name: "Great Dyke Complex", country: "Zimbabwe", comm: "Platinum (PGE), Chrome, Lithium", cat: "BATTERY", details: "Extensive layered intrusion rich in PGEs, ferrochrome, and world-class hard-rock lithium (Arcadia).", route: "Beira & Maputo rail links", lat: -18.25, lng: 30.50 },
+      { id: "MINE_08", name: "Ambatovy Nickel-Cobalt Complex", country: "Madagascar", comm: "Nickel, Cobalt", cat: "BATTERY", details: "Class 1 refined nickel and battery-grade cobalt from high-pressure acid leaching (HPAL).", route: "Pipeline slurry to Port of Toamasina", lat: -18.83, lng: 48.30 },
+      { id: "MINE_09", name: "Jwaneng Diamond Mine", country: "Botswana", comm: "Diamonds", cat: "METALS", details: "The richest diamond mine in the world by value; kimberlite pipe operated by Debswana.", route: "Gaborone sorting to international bourses", lat: -24.60, lng: 24.70 },
+      { id: "MINE_10", name: "Khouribga & Boucraa Phosphate Basins", country: "Morocco", comm: "Phosphate Rock, Phosphoric Acid", cat: "METALS", details: "Holds >70% of world phosphate reserves; key guarantor of global agricultural food security.", route: "Slurry pipeline to El Jorf Lasfar & Casablanca", lat: 32.88, lng: -6.90 },
+      { id: "MINE_11", name: "Rössing & Husab Uranium Complexes", country: "Namibia", comm: "Uranium", cat: "METALS", details: "Vast open-pit alaskite-hosted uranium deposits producing yellowcake (U3O8).", route: "Walvis Bay mineral berths", lat: -22.48, lng: 15.04 },
+      { id: "MINE_12", name: "Moatize Coal Basin", country: "Mozambique", comm: "Coking Coal, Thermal Coal", cat: "ENERGY", details: "Premium hard coking coal basin supporting Asian and European blast furnaces.", route: "Nacala Logistics Corridor (912 km)", lat: -16.12, lng: 33.77 },
+      { id: "MINE_13", name: "Kwale Mineral Sands", country: "Kenya", comm: "Rutile, Ilmenite, Zircon", cat: "METALS", details: "High-grade titanium mineral sands mining and wet concentration plant.", route: "Port of Mombasa Likoni facility", lat: -4.42, lng: 39.43 },
+      { id: "MINE_14", name: "Molo Flake Graphite Deposit", country: "Madagascar", comm: "Flake Graphite", cat: "BATTERY", details: "High-purity crystalline flake graphite engineered for EV lithium-ion battery anodes.", route: "Port of Tôlanaro (Ehoala)", lat: -24.80, lng: 46.88 }
+    ];
+
+    // =========================================================================
+    // STATE MANAGEMENT
+    // =========================================================================
+    const APP_STATE = {
+      activeRegion: "ALL",
+      selectedCountry: null,
+      activeLayers: {
+        ports: true,
+        pipes: true,
+        basins: true,
+        mines: true,
+        boundaries: true
+      },
+      activeTableTab: "ports",
+      activeInspectorTab: "drill",
+      tableSearchQuery: ""
+    };
+
+    let leafletMap = null;
+    let geojsonLayer = null;
+    let portsLayerGroup = null;
+    let pipelinesLayerGroup = null;
+    let basinsLayerGroup = null;
+    let minesLayerGroup = null;
+
+    // Sub-region geographic camera bounds
+    const REGION_BOUNDS = {
+      ALL: [[-36, -26], [38, 55]],
+      NORTH: [[18, -18], [38, 38]],
+      WEST: [[3, -19], [26, 16]],
+      CENTRAL: [[-18, 6], [24, 32]],
+      EAST: [[-27, 28], [19, 53]],
+      SOUTH: [[-36, 11], [-17, 36]]
+    };
+
+    // =========================================================================
+    // MAP INITIALIZATION & VECTOR LAYERS
+    // =========================================================================
+    function initDashboard() {
+      // Initialize Leaflet map
+      const mapContainer = document.getElementById('map');
+      if (!mapContainer || typeof L === 'undefined') return;
+
+      leafletMap = L.map('map', {
+        center: [2.0, 18.0],
+        zoom: 3,
+        minZoom: 2,
+        maxZoom: 10,
+        scrollWheelZoom: false,
+        attributionControl: false
+      });
+
+      // Add clean attribution
+      const attr = L.control.attribution({ position: 'bottomright' });
+      attr.addAttribution('Boundaries: Natural Earth • USGS Energy Data');
+      attr.addTo(leafletMap);
+
+      // Create Layer Groups
+      portsLayerGroup = L.layerGroup().addTo(leafletMap);
+      pipelinesLayerGroup = L.layerGroup().addTo(leafletMap);
+      basinsLayerGroup = L.layerGroup().addTo(leafletMap);
+      minesLayerGroup = L.layerGroup().addTo(leafletMap);
+
+      // Load Vector Country TopoJSON
+      loadVectorBasemap();
+
+      // Render GIS features
+      renderPipelines();
+      renderBasins();
+      renderPorts();
+      renderMines();
+
+      // Populate UI controls
+      populateCountryDropdown();
+      renderQuickCountryList();
+      renderTables();
+
+      // Initial fit to Africa
+      leafletMap.fitBounds(REGION_BOUNDS.ALL, { padding: [20, 20] });
+    }
+
+    // Load vector countries from allowed CDN TopoJSON
+    function loadVectorBasemap() {
+      if (typeof fetch === 'undefined') return;
+
+      fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json')
+        .then(function(res) { return res.json(); })
+        .then(function(topo) {
+          if (!topo || !topo.objects || !topo.objects.countries) return;
+          if (typeof topojson === 'undefined' || !topojson.feature) return;
+
+          const worldGeo = topojson.feature(topo, topo.objects.countries);
+
+          // Build index of African country names for fast matching
+          const africaNameSet = new Set(AFRICAN_COUNTRIES.map(function(c) { return c.name.toLowerCase(); }));
+          // Add known aliases in Natural Earth
+          const aliasMap = {
+            "democratic republic of the congo": "Congo (Kinshasa)",
+            "republic of the congo": "Congo (Brazzaville)",
+            "dem. rep. congo": "Congo (Kinshasa)",
+            "congo": "Congo (Brazzaville)",
+            "united republic of tanzania": "Tanzania",
+            "tanzania": "Tanzania",
+            "gambia": "Gambia, The",
+            "the gambia": "Gambia, The",
+            "w. sahara": "Western Sahara",
+            "somalia": "Somalia",
+            "somaliland": "Somalia",
+            "s. sudan": "South Sudan",
+            "south sudan": "South Sudan",
+            "central african rep.": "Central African Republic",
+            "eq. guinea": "Equatorial Guinea",
+            "cote d'ivoire": "Côte d'Ivoire",
+            "ivory coast": "Côte d'Ivoire",
+            "eswatini": "Eswatini",
+            "swaziland": "Eswatini"
+          };
+
+          geojsonLayer = L.geoJSON(worldGeo, {
+            filter: function(feature) {
+              const rawName = (feature.properties && feature.properties.name) ? feature.properties.name.toLowerCase() : "";
+              const resolved = aliasMap[rawName] || rawName;
+              return africaNameSet.has(resolved.toLowerCase()) || rawName === "africa";
+            },
+            style: function(feature) {
+              const rawName = (feature.properties && feature.properties.name) ? feature.properties.name.toLowerCase() : "";
+              const match = matchCountryByName(rawName);
+              const regColor = match ? getRegionColor(match.reg) : "#f8fafc";
+
+              return {
+                fillColor: regColor,
+                fillOpacity: 0.65,
+                color: "#94a3b8",
+                weight: 1.2,
+                dashArray: "1"
+              };
+            },
+            onEachFeature: function(feature, layer) {
+              const rawName = (feature.properties && feature.properties.name) ? feature.properties.name : "Country";
+              const cObj = matchCountryByName(rawName);
+
+              layer.on({
+                mouseover: function(e) {
+                  const l = e.target;
+                  l.setStyle({
+                    fillOpacity: 0.9,
+                    weight: 2.5,
+                    color: "#0f62fe"
+                  });
+                  if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                    l.bringToFront();
+                  }
+                },
+                mouseout: function(e) {
+                  if (geojsonLayer) {
+                    geojsonLayer.resetStyle(e.target);
+                  }
+                },
+                click: function(e) {
+                  if (cObj) {
+                    selectCountry(cObj.name);
+                    leafletMap.fitBounds(e.target.getBounds(), { padding: [40, 40], maxZoom: 6 });
+                  }
+                }
+              });
+
+              layer.bindTooltip(function() {
+                return `<strong>${cObj ? cObj.name : rawName}</strong><br><span style="font-size:11px; color:#525252">${cObj ? cObj.reg + ' Region' : 'Africa'}</span>`;
+              }, { sticky: true, className: 'carbon-tooltip' });
+            }
+          }).addTo(leafletMap);
+        })
+        .catch(function(err) {
+          // Graceful fallback for offline sandbox
+          console.warn("TopoJSON basemap fetch deferred:", err);
+        });
+    }
+
+    function matchCountryByName(rawName) {
+      if (!rawName) return null;
+      const lower = rawName.toLowerCase().trim();
+      for (let i = 0; i < AFRICAN_COUNTRIES.length; i++) {
+        const c = AFRICAN_COUNTRIES[i];
+        if (c.name.toLowerCase() === lower || c.lf.toLowerCase().includes(lower) || lower.includes(c.name.toLowerCase())) {
+          return c;
+        }
+      }
+      return null;
+    }
+
+    function getRegionColor(reg) {
+      switch (reg) {
+        case "NORTH": return "#e0f2fe";
+        case "WEST": return "#ecfdf5";
+        case "CENTRAL": return "#fef3c7";
+        case "EAST": return "#f3e8ff";
+        case "SOUTH": return "#ffedd5";
+        default: return "#f1f5f9";
+      }
+    }
+
+    // =========================================================================
+    // FEATURE RENDERING: PIPELINES, BASINS, PORTS, MINES
+    // =========================================================================
+
+    // Render Pipeline Networks
+    function renderPipelines() {
+      if (!pipelinesLayerGroup) return;
+      pipelinesLayerGroup.clearLayers();
+
+      PIPELINES_DATA.forEach(function(pipe) {
+        // Filter by region if active
+        if (APP_STATE.activeRegion !== "ALL") {
+          const matchedCountry = AFRICAN_COUNTRIES.find(function(c) {
+            return pipe.countries.includes(c.name) && c.reg === APP_STATE.activeRegion;
+          });
+          if (!matchedCountry) return;
+        }
+
+        const polyline = L.polyline(pipe.coords, {
+          color: pipe.color,
+          weight: pipe.type === "Crude Oil" ? 4 : 3,
+          dashArray: pipe.dash ? "6, 5" : null,
+          opacity: 0.9,
+          lineCap: "round"
+        });
+
+        const popupHtml = `
+          <div class="popup-box">
+            <div class="popup-title">${pipe.name}</div>
+            <div class="popup-row">
+              <span class="popup-label">Type</span>
+              <span class="popup-val"><strong>${pipe.type}</strong></span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Route</span>
+              <span class="popup-val">${pipe.endpoints}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Length</span>
+              <span class="popup-val mono-cell">${pipe.length} km</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Capacity</span>
+              <span class="popup-val mono-cell">${pipe.cap}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Operator</span>
+              <span class="popup-val">${pipe.op}</span>
+            </div>
+          </div>
+        `;
+
+        polyline.bindPopup(popupHtml);
+        polyline.bindTooltip(`<strong>${pipe.name}</strong><br>${pipe.type} (${pipe.length} km)`);
+
+        polyline.on('mouseover', function(e) {
+          e.target.setStyle({ weight: 6, opacity: 1.0 });
+        });
+        polyline.on('mouseout', function(e) {
+          e.target.setStyle({ weight: pipe.type === "Crude Oil" ? 4 : 3, opacity: 0.9 });
+        });
+
+        polyline.addTo(pipelinesLayerGroup);
+      });
+    }
+
+    // Render USGS Undiscovered Oil and Gas Basins
+    function renderBasins() {
+      if (!basinsLayerGroup) return;
+      basinsLayerGroup.clearLayers();
+
+      BASINS_DATA.forEach(function(basin) {
+        // Create an ellipse/rectangle polygon for the basin footprint
+        const bounds = L.latLngBounds(basin.bounds[0], basin.bounds[1]);
+
+        const rect = L.rectangle(bounds, {
+          color: "#0284c7",
+          weight: 1.5,
+          dashArray: "4, 4",
+          fillColor: "#38bdf8",
+          fillOpacity: 0.18
+        });
+
+        const centerMarker = L.circleMarker([basin.lat, basin.lng], {
+          radius: 8,
+          color: "#0369a1",
+          fillColor: "#0284c7",
+          fillOpacity: 0.85,
+          weight: 2
+        });
+
+        const popupHtml = `
+          <div class="popup-box">
+            <div class="popup-title">USGS Feature: ${basin.name}</div>
+            <div class="popup-row">
+              <span class="popup-label">Country/Region</span>
+              <span class="popup-val">${basin.country}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Undisc. Oil</span>
+              <span class="popup-val mono-cell">${basin.oil} MMBO</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Undisc. Gas</span>
+              <span class="popup-val mono-cell">${basin.gas} BCFG</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Natural Gas Liquids</span>
+              <span class="popup-val mono-cell">${basin.ngl} MMBNGL</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Total Volume</span>
+              <span class="popup-val mono-cell"><strong>${basin.totalBoe}</strong></span>
+            </div>
+            <div class="popup-row" style="margin-top:6px; border-top:1px solid var(--outline-variant); padding-top:4px;">
+              <span class="popup-label">USGS Citation</span>
+              <span class="popup-val" style="font-size:11px;">${basin.citation}</span>
+            </div>
+          </div>
+        `;
+
+        rect.bindPopup(popupHtml);
+        centerMarker.bindPopup(popupHtml);
+        centerMarker.bindTooltip(`<strong>${basin.name}</strong><br>${basin.totalBoe}`);
+
+        rect.addTo(basinsLayerGroup);
+        centerMarker.addTo(basinsLayerGroup);
+      });
+    }
+
+    // Render Mineral Exporting Ports
+    function renderPorts() {
+      if (!portsLayerGroup) return;
+      portsLayerGroup.clearLayers();
+
+      PORTS_DATA.forEach(function(port) {
+        // Filter by region if set
+        const cObj = AFRICAN_COUNTRIES.find(function(c) { return c.name.toLowerCase() === port.country.toLowerCase(); });
+        if (APP_STATE.activeRegion !== "ALL" && cObj && cObj.reg !== APP_STATE.activeRegion) {
+          return;
+        }
+
+        // Determine marker color based on category
+        let markerColor = "var(--color-port-bulk)";
+        let fillColor = "#3b82f6";
+
+        if (port.type.includes("Oil") || port.type.includes("Gas")) {
+          markerColor = "var(--color-port-energy)";
+          fillColor = "#f59e0b";
+        } else if (port.cat === "BATTERY") {
+          markerColor = "var(--color-cobalt)";
+          fillColor = "#8b5cf6";
+        } else if (port.comm.includes("Bauxite") || port.comm.includes("Aluminum")) {
+          markerColor = "var(--color-bauxite)";
+          fillColor = "#f43f5e";
+        } else if (port.comm.includes("Iron")) {
+          markerColor = "var(--color-iron-ore)";
+          fillColor = "#ef4444";
+        }
+
+        const marker = L.circleMarker([port.lat, port.lng], {
+          radius: port.cap.includes("Million") || port.cap.includes("Mt") ? 7 : 5.5,
+          color: markerColor,
+          fillColor: fillColor,
+          fillOpacity: 0.9,
+          weight: 2
+        });
+
+        const popupHtml = `
+          <div class="popup-box">
+            <div class="popup-title">${port.name} Port (${port.country})</div>
+            <div class="popup-row">
+              <span class="popup-label">Type</span>
+              <span class="popup-val">${port.type}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Key Exports</span>
+              <span class="popup-val"><strong>${port.comm}</strong></span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Capacity</span>
+              <span class="popup-val mono-cell">${port.cap}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Operator</span>
+              <span class="popup-val">${port.op}</span>
+            </div>
+            <div style="margin-top:8px; text-align:right;">
+              <button class="btn-action-locate" onclick="selectCountry('${port.country}')">Inspect ${port.country}</button>
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupHtml);
+        marker.bindTooltip(`<strong>${port.name}</strong> (${port.country})<br><span style="font-size:11px">${port.comm.split(',')[0]}</span>`);
+
+        marker.on('click', function() {
+          selectCountry(port.country);
+        });
+
+        marker.addTo(portsLayerGroup);
+      });
+    }
+
+    // Render Critical & Strategic Mines
+    function renderMines() {
+      if (!minesLayerGroup) return;
+      minesLayerGroup.clearLayers();
+
+      MINES_DATA.forEach(function(mine) {
+        const cObj = AFRICAN_COUNTRIES.find(function(c) { return c.name.toLowerCase() === mine.country.toLowerCase(); });
+        if (APP_STATE.activeRegion !== "ALL" && cObj && cObj.reg !== APP_STATE.activeRegion) {
+          return;
+        }
+
+        let mColor = "var(--color-cobalt)";
+        if (mine.comm.includes("Bauxite")) mColor = "var(--color-bauxite)";
+        if (mine.comm.includes("PGE") || mine.comm.includes("Platinum")) mColor = "var(--color-platinum)";
+        if (mine.comm.includes("Gold")) mColor = "var(--color-gold)";
+        if (mine.comm.includes("Diamond")) mColor = "var(--color-diamond)";
+        if (mine.comm.includes("Iron")) mColor = "var(--color-iron-ore)";
+        if (mine.comm.includes("Phosphate")) mColor = "var(--color-uranium)";
+
+        const marker = L.circleMarker([mine.lat, mine.lng], {
+          radius: 6.5,
+          color: "#ffffff",
+          fillColor: mColor,
+          fillOpacity: 1.0,
+          weight: 2
+        });
+
+        const popupHtml = `
+          <div class="popup-box">
+            <div class="popup-title">Strategic Deposit: ${mine.name}</div>
+            <div class="popup-row">
+              <span class="popup-label">Commodities</span>
+              <span class="popup-val"><strong>${mine.comm}</strong></span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-label">Host Country</span>
+              <span class="popup-val">${mine.country}</span>
+            </div>
+            <div style="margin-top:6px; font-size:11.5px; color:#475569; line-height:1.35;">
+              ${mine.details}
+            </div>
+            <div class="popup-row" style="margin-top:6px; border-top:1px solid var(--outline-variant); padding-top:4px;">
+              <span class="popup-label">Export Route</span>
+              <span class="popup-val">${mine.route}</span>
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupHtml);
+        marker.bindTooltip(`<strong>${mine.name}</strong><br>${mine.comm}`);
+
+        marker.addTo(minesLayerGroup);
+      });
+    }
+
+    // =========================================================================
+    // UI INTERACTION, DRILL-DOWN & FILTERING
+    // =========================================================================
+
+    function filterByRegion(regionKey) {
+      APP_STATE.activeRegion = regionKey;
+
+      // Update button chip active states
+      const chips = document.querySelectorAll('.btn-chip');
+      chips.forEach(function(c) { c.classList.remove('active'); });
+
+      if (regionKey === "ALL") document.getElementById('btnRegAll').classList.add('active');
+      else if (regionKey === "NORTH") document.getElementById('btnRegNorth').classList.add('active');
+      else if (regionKey === "WEST") document.getElementById('btnRegWest').classList.add('active');
+      else if (regionKey === "CENTRAL") document.getElementById('btnRegCentral').classList.add('active');
+      else if (regionKey === "EAST") document.getElementById('btnRegEast').classList.add('active');
+      else if (regionKey === "SOUTH") document.getElementById('btnRegSouth').classList.add('active');
+
+      // Update HUD status text
+      const hud = document.getElementById('mapStatusText');
+      if (hud) {
+        hud.innerHTML = `REGION: <strong>${regionKey === "ALL" ? "ALL AFRICA" : regionKey + " AFRICA"}</strong> • Refined Corridor Overlays`;
+      }
+
+      // Re-render map layers
+      renderPipelines();
+      renderPorts();
+      renderMines();
+      renderQuickCountryList();
+
+      // Pan/Zoom map to selected region bounds
+      if (leafletMap && REGION_BOUNDS[regionKey]) {
+        leafletMap.fitBounds(REGION_BOUNDS[regionKey], { padding: [30, 30] });
+      }
+
+      // Update KPI counters
+      updateKpis();
+    }
+
+    function toggleLayer(layerKey) {
+      APP_STATE.activeLayers[layerKey] = !APP_STATE.activeLayers[layerKey];
+      const isVisible = APP_STATE.activeLayers[layerKey];
+
+      let btnId = "";
+      let group = null;
+
+      if (layerKey === "ports") { btnId = "togPorts"; group = portsLayerGroup; }
+      else if (layerKey === "pipes") { btnId = "togPipes"; group = pipelinesLayerGroup; }
+      else if (layerKey === "basins") { btnId = "togBasins"; group = basinsLayerGroup; }
+      else if (layerKey === "mines") { btnId = "togMines"; group = minesLayerGroup; }
+
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        if (isVisible) btn.classList.add('layer-active');
+        else btn.classList.remove('layer-active');
+      }
+
+      if (group && leafletMap) {
+        if (isVisible) {
+          if (!leafletMap.hasLayer(group)) leafletMap.addLayer(group);
+        } else {
+          if (leafletMap.hasLayer(group)) leafletMap.removeLayer(group);
+        }
+      }
+    }
+
+    function resetMapView() {
+      filterByRegion("ALL");
+      if (leafletMap) {
+        leafletMap.fitBounds(REGION_BOUNDS.ALL, { padding: [20, 20] });
+      }
+    }
+
+    function selectCountry(countryName) {
+      if (!countryName) return;
+      const c = AFRICAN_COUNTRIES.find(function(item) {
+        return item.name.toLowerCase() === countryName.toLowerCase();
+      });
+      if (!c) return;
+
+      APP_STATE.selectedCountry = c;
+
+      // Sync dropdown
+      const sel = document.getElementById('countrySelect');
+      if (sel) sel.value = c.name;
+
+      // Update Drill-Down Inspector Card
+      const nameEl = document.getElementById('drillCountryName');
+      const lfEl = document.getElementById('drillCountryLF');
+      const badgeEl = document.getElementById('drillRegionBadge');
+      const capEl = document.getElementById('drillCapital');
+      const isoEl = document.getElementById('drillIso');
+      const areaEl = document.getElementById('drillArea');
+      const lenEl = document.getElementById('drillPerimeter');
+
+      if (nameEl) nameEl.textContent = c.name;
+      if (lfEl) lfEl.textContent = c.lf;
+      if (badgeEl) {
+        badgeEl.textContent = `${c.reg} AFRICA`;
+        badgeEl.className = `badge badge-${c.reg === 'NORTH' ? 'blue' : c.reg === 'WEST' ? 'green' : c.reg === 'CENTRAL' ? 'amber' : c.reg === 'EAST' ? 'purple' : 'red'}`;
+      }
+      if (capEl) capEl.textContent = c.cap;
+      if (isoEl) isoEl.textContent = `${c.iso2} / ${c.iso3}`;
+      if (areaEl) areaEl.textContent = `${c.area.toFixed(2)} deg²`;
+      if (lenEl) lenEl.textContent = `${c.len.toFixed(2)} deg`;
+
+      // Find ports in this country
+      const portsInCountry = PORTS_DATA.filter(function(p) {
+        return p.country.toLowerCase() === c.name.toLowerCase();
+      });
+      const countEl = document.getElementById('drillPortCount');
+      if (countEl) countEl.textContent = `${portsInCountry.length} Ports`;
+
+      // Find pipelines traversing this country
+      const pipesInCountry = PIPELINES_DATA.filter(function(p) {
+        return p.countries.includes(c.name);
+      });
+
+      // Find mines in this country
+      const minesInCountry = MINES_DATA.filter(function(m) {
+        return m.country.toLowerCase() === c.name.toLowerCase();
+      });
+
+      // Populate Associated Facilities List
+      const facList = document.getElementById('drillFacilityList');
+      if (facList) {
+        let html = "";
+        if (portsInCountry.length === 0 && pipesInCountry.length === 0 && minesInCountry.length === 0) {
+          html = `<span style="color:var(--on-surface-muted);">No major deepwater export ports or pipelines indexed for ${c.name}.</span>`;
+        } else {
+          portsInCountry.forEach(function(p) {
+            html += `
+              <div style="border-left: 3px solid var(--color-port-bulk); padding-left: 6px; margin-bottom: 4px;">
+                <strong>${p.name}</strong> • <span style="font-size:11px; color:#525252">${p.type}</span><br>
+                <span style="font-size:11px; color:#0f62fe;">Exports: ${p.comm}</span>
+              </div>
+            `;
+          });
+          pipesInCountry.forEach(function(p) {
+            html += `
+              <div style="border-left: 3px solid var(--color-crude-oil); padding-left: 6px; margin-bottom: 4px;">
+                <strong>${p.name}</strong> (${p.type})<br>
+                <span style="font-size:11px; color:#525252">${p.cap} • Operator: ${p.op}</span>
+              </div>
+            `;
+          });
+          minesInCountry.forEach(function(m) {
+            html += `
+              <div style="border-left: 3px solid var(--color-cobalt); padding-left: 6px; margin-bottom: 4px;">
+                <strong>${m.name}</strong><br>
+                <span style="font-size:11px; color:#7c3aed;">${m.comm}</span>
+              </div>
+            `;
+          });
+        }
+        facList.innerHTML = html;
+      }
+
+      // Switch to Drill-Down Tab in Inspector
+      switchInspectorTab('drill');
+
+      // Center map on country
+      if (leafletMap) {
+        leafletMap.flyTo([c.lat, c.lng], 5, { duration: 1.2 });
+      }
+
+      // Update Quick List selected styling
+      const qBtns = document.querySelectorAll('.country-row-btn');
+      qBtns.forEach(function(btn) {
+        if (btn.getAttribute('data-cname') === c.name) {
+          btn.classList.add('selected');
+          btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+    }
+
+    function onCountryDropdownChange(val) {
+      if (val) selectCountry(val);
+    }
+
+    function switchInspectorTab(tabKey) {
+      APP_STATE.activeInspectorTab = tabKey;
+      const tabs = ['drill', 'legend', 'stats'];
+      tabs.forEach(function(t) {
+        const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        const view = document.getElementById(`view${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (btn && view) {
+          if (t === tabKey) {
+            btn.classList.add('active');
+            view.style.display = 'block';
+          } else {
+            btn.classList.remove('active');
+            view.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    function populateCountryDropdown() {
+      const sel = document.getElementById('countrySelect');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">Jump to Country Outline…</option>';
+
+      // Sort alphabetically
+      const sorted = [...AFRICAN_COUNTRIES].sort(function(a, b) {
+        return a.name.localeCompare(b.name);
+      });
+
+      sorted.forEach(function(c) {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = `${c.name} (${c.iso3})`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function renderQuickCountryList() {
+      const container = document.getElementById('countryQuickList');
+      const countLabel = document.getElementById('activeRegionCount');
+      if (!container) return;
+
+      const filtered = AFRICAN_COUNTRIES.filter(function(c) {
+        return APP_STATE.activeRegion === "ALL" || c.reg === APP_STATE.activeRegion;
+      }).sort(function(a, b) {
+        return a.name.localeCompare(b.name);
+      });
+
+      if (countLabel) countLabel.textContent = `${filtered.length} Entities`;
+
+      let html = "";
+      filtered.forEach(function(c) {
+        const portCount = PORTS_DATA.filter(function(p) { return p.country.toLowerCase() === c.name.toLowerCase(); }).length;
+        html += `
+          <button class="country-row-btn" data-cname="${c.name}" onclick="selectCountry('${c.name}')">
+            <span><strong>${c.name}</strong> <span style="color:#71717a; font-size:11px;">(${c.cap})</span></span>
+            <span class="badge ${portCount > 0 ? 'badge-blue' : 'badge-amber'}">${portCount > 0 ? portCount + ' Ports' : c.iso3}</span>
+          </button>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function updateKpis() {
+      const activeCountries = AFRICAN_COUNTRIES.filter(function(c) {
+        return APP_STATE.activeRegion === "ALL" || c.reg === APP_STATE.activeRegion;
+      });
+
+      const activePorts = PORTS_DATA.filter(function(p) {
+        const c = AFRICAN_COUNTRIES.find(function(item) { return item.name.toLowerCase() === p.country.toLowerCase(); });
+        return APP_STATE.activeRegion === "ALL" || (c && c.reg === APP_STATE.activeRegion);
+      });
+
+      const kpiCountries = document.getElementById('kpiCountries');
+      const kpiPorts = document.getElementById('kpiPorts');
+
+      if (kpiCountries) kpiCountries.textContent = activeCountries.length;
+      if (kpiPorts) kpiPorts.textContent = activePorts.length;
+    }
+
+    // =========================================================================
+    // DATA TABLE DIRECTORY
+    // =========================================================================
+
+    function switchTableTab(tabKey) {
+      APP_STATE.activeTableTab = tabKey;
+      const tabs = ['ports', 'pipes', 'basins', 'mines'];
+
+      tabs.forEach(function(t) {
+        const btn = document.getElementById(`tblTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        const tbl = document.getElementById(`${t}Table`);
+        if (btn && tbl) {
+          if (t === tabKey) {
+            btn.classList.add('active');
+            tbl.style.display = 'table';
+          } else {
+            btn.classList.remove('active');
+            tbl.style.display = 'none';
+          }
+        }
+      });
+
+      renderTables();
+    }
+
+    function filterTableData(query) {
+      APP_STATE.tableSearchQuery = query.toLowerCase().trim();
+      renderTables();
+    }
+
+    function renderTables() {
+      renderPortsTable();
+      renderPipesTable();
+      renderBasinsTable();
+      renderMinesTable();
+    }
+
+    function renderPortsTable() {
+      const tbody = document.getElementById('portsTableBody');
+      if (!tbody) return;
+
+      const q = APP_STATE.tableSearchQuery;
+      const filtered = PORTS_DATA.filter(function(p) {
+        return !q || p.name.toLowerCase().includes(q) || p.country.toLowerCase().includes(q) || p.comm.toLowerCase().includes(q) || p.type.toLowerCase().includes(q);
+      });
+
+      let html = "";
+      filtered.forEach(function(p) {
+        html += `
+          <tr onclick="locatePort('${p.name}')">
+            <td><strong>${p.name}</strong></td>
+            <td>${p.country}</td>
+            <td><span class="badge ${p.type.includes('Oil') ? 'badge-amber' : 'badge-blue'}">${p.type}</span></td>
+            <td>${p.comm}</td>
+            <td class="mono-cell">${p.cap}</td>
+            <td style="font-size:11px; color:#525252;">${p.op}</td>
+            <td><button class="btn-action-locate" onclick="event.stopPropagation(); locatePort('${p.name}')">Locate</button></td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html || `<tr><td colspan="7" style="text-align:center; padding:20px; color:#6f6f6f;">No facilities matching "${q}"</td></tr>`;
+    }
+
+    function renderPipesTable() {
+      const tbody = document.getElementById('pipesTableBody');
+      if (!tbody) return;
+
+      const q = APP_STATE.tableSearchQuery;
+      const filtered = PIPELINES_DATA.filter(function(p) {
+        return !q || p.name.toLowerCase().includes(q) || p.type.toLowerCase().includes(q) || p.endpoints.toLowerCase().includes(q);
+      });
+
+      let html = "";
+      filtered.forEach(function(p) {
+        html += `
+          <tr onclick="locatePipeline('${p.id}')">
+            <td><strong>${p.name}</strong></td>
+            <td><span class="badge ${p.type.includes('Crude') ? 'badge-amber' : 'badge-blue'}">${p.type}</span></td>
+            <td>${p.countries.join(', ')}</td>
+            <td class="mono-cell">${p.length} km</td>
+            <td class="mono-cell">${p.cap}</td>
+            <td style="font-size:11px;">${p.endpoints}</td>
+            <td style="font-size:11px; color:#525252;">${p.op}</td>
+            <td><button class="btn-action-locate" onclick="event.stopPropagation(); locatePipeline('${p.id}')">Locate</button></td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function renderBasinsTable() {
+      const tbody = document.getElementById('basinsTableBody');
+      if (!tbody) return;
+
+      const q = APP_STATE.tableSearchQuery;
+      const filtered = BASINS_DATA.filter(function(b) {
+        return !q || b.name.toLowerCase().includes(q) || b.country.toLowerCase().includes(q);
+      });
+
+      let html = "";
+      filtered.forEach(function(b) {
+        html += `
+          <tr onclick="locateBasin('${b.id}')">
+            <td><strong>${b.name}</strong></td>
+            <td>${b.country}</td>
+            <td class="mono-cell">${b.oil}</td>
+            <td class="mono-cell">${b.gas}</td>
+            <td class="mono-cell">${b.ngl}</td>
+            <td class="mono-cell"><strong>${b.totalBoe}</strong></td>
+            <td style="font-size:11px; color:#525252;">${b.citation}</td>
+            <td><button class="btn-action-locate" onclick="event.stopPropagation(); locateBasin('${b.id}')">Locate</button></td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function renderMinesTable() {
+      const tbody = document.getElementById('minesTableBody');
+      if (!tbody) return;
+
+      const q = APP_STATE.tableSearchQuery;
+      const filtered = MINES_DATA.filter(function(m) {
+        return !q || m.name.toLowerCase().includes(q) || m.country.toLowerCase().includes(q) || m.comm.toLowerCase().includes(q);
+      });
+
+      let html = "";
+      filtered.forEach(function(m) {
+        html += `
+          <tr onclick="locateMine('${m.id}')">
+            <td><strong>${m.name}</strong></td>
+            <td>${m.country}</td>
+            <td><strong>${m.comm}</strong></td>
+            <td><span class="badge ${m.cat === 'BATTERY' ? 'badge-purple' : 'badge-red'}">${m.cat}</span></td>
+            <td style="font-size:11px;">${m.details}</td>
+            <td style="font-size:11px; color:#525252;">${m.route}</td>
+            <td><button class="btn-action-locate" onclick="event.stopPropagation(); locateMine('${m.id}')">Locate</button></td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    // Centering Map on specific elements
+    function locatePort(portName) {
+      const p = PORTS_DATA.find(function(item) { return item.name.toLowerCase() === portName.toLowerCase(); });
+      if (!p || !leafletMap) return;
+
+      leafletMap.flyTo([p.lat, p.lng], 7, { duration: 1.0 });
+      selectCountry(p.country);
+
+      // Open popup if found in layer group
+      if (portsLayerGroup) {
+        portsLayerGroup.eachLayer(function(l) {
+          if (l.getLatLng && Math.abs(l.getLatLng().lat - p.lat) < 0.01 && Math.abs(l.getLatLng().lng - p.lng) < 0.01) {
+            l.openPopup();
+          }
+        });
+      }
+    }
+
+    function locatePipeline(pipeId) {
+      const p = PIPELINES_DATA.find(function(item) { return item.id === pipeId; });
+      if (!p || !leafletMap) return;
+
+      const poly = L.polyline(p.coords);
+      leafletMap.fitBounds(poly.getBounds(), { padding: [50, 50] });
+
+      if (pipelinesLayerGroup) {
+        pipelinesLayerGroup.eachLayer(function(l) {
+          if (l.getBounds && l.getBounds().equals(poly.getBounds())) {
+            l.openPopup();
+          }
+        });
+      }
+    }
+
+    function locateBasin(basinId) {
+      const b = BASINS_DATA.find(function(item) { return item.id === basinId; });
+      if (!b || !leafletMap) return;
+
+      leafletMap.fitBounds(L.latLngBounds(b.bounds[0], b.bounds[1]), { padding: [40, 40] });
+    }
+
+    function locateMine(mineId) {
+      const m = MINES_DATA.find(function(item) { return item.id === mineId; });
+      if (!m || !leafletMap) return;
+
+      leafletMap.flyTo([m.lat, m.lng], 7, { duration: 1.0 });
+      selectCountry(m.country);
+    }
+
+    // =========================================================================
+    // DOM READY HOOK
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', function() {
+      initDashboard();
+    });
+  </script>
+</body>
+</html>
