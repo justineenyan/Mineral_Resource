@@ -1,4 +1,4 @@
-# Mineral_Resource
+# Mineral_Resource - Ongoing
 Interactive GIS dashboards and spatial analytics exploring African natural resources (oil, gas, critical minerals), logistics corridors, and hydroclimatic water stress / contamination risks.
 # African Natural Resources & Mining Water-Risk Spatial Analytics
 
